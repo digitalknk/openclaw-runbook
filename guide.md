@@ -150,67 +150,15 @@ Those limits prevent one bad task from cascading into retries and runaway cost.
 
 ## A Practical Rotating Heartbeat Pattern
 
-Instead of running separate cron jobs for different periodic checks like email, calendar, task reconciliation, or git status, I use a single heartbeat that rotates through checks based on how overdue each one is.
+Instead of running separate cron jobs for different periodic checks, I use a single heartbeat that rotates through checks based on how overdue each one is.
 
-The idea is simple. Each check has:
-
-- a cadence (how often it should run)
-- an optional time window (when it's allowed to run)
-- a record of the last time it ran
-
-On each heartbeat tick, the system looks at all eligible checks and runs the one that is most overdue. Everything else waits until a later tick.
-
-Here are the cadences I use as a starting point:
-
-- Email: every 30 minutes (9 AM - 9 PM only)
-- Calendar: every 2 hours (8 AM - 10 PM)
-- Todoist reconciliation: every 30 minutes
-- Git status: once every 24 hours
-- Proactive scans: once every 24 hours, around 3 AM
-
-After a check runs, its timestamp is updated. The next heartbeat picks whichever check is now the most overdue.
-
-All heartbeat checks run on a very cheap model. The heartbeat itself does almost no reasoning. If a check finds something that needs work, it spawns the appropriate agent instead of trying to do it inline.
+The idea is simple. Each check has a cadence (how often it should run), an optional time window (when it's allowed to run), and a record of the last time it ran. On each heartbeat tick, the system runs whichever check is most overdue.
 
 This batches background work, keeps costs flat, and avoids the "everything fires at once" problem.
 
-I keep the full implementation documented in a HEARTBEAT.md file in my workspace, and the heartbeat prompt explicitly loads that file so it knows what checks exist and how they should behave.
+All heartbeat checks run on a very cheap model. If a check finds something that needs work, it spawns the appropriate agent instead of trying to do it inline.
 
----
-
-## Building Your Own Rotating Heartbeat System
-
-If you want to build something like this yourself, you don't need to hand-code it from scratch. Letting the agent build the system works well here.
-
-The important part is being clear about the behavior you want, not the exact code.
-
-Here's the prompt I would give an agent to build a rotating heartbeat system similar to mine:
-
-```text
-Build a rotating heartbeat check system:
-
-Create HEARTBEAT.md with these checks:
-Email: every 30 min (9 AM - 9 PM only)
-Calendar: every 2 hours (8 AM - 10 PM)
-Todoist: every 30 min
-Git status: every 24 hours
-Proactive scans: every 24 hours (3 AM only)
-
-Create heartbeat-state.json to track last run timestamps
-
-On each heartbeat:
-Read state file
-Calculate which check is most overdue (considering time windows)
-Run that check
-Update timestamp
-Report only if the check finds something actionable
-
-If nothing needs attention, return HEARTBEAT_OK
-
-Use the cheapest model for heartbeat checks. Spawn agents if a check needs more compute.
-```
-
-That prompt is outcome-focused. It describes what the system should do, not how to implement every detail. From there, you can tweak cadences, checks, or escalation behavior to match how you work.
+For the full implementation pattern and prompt template, see [`examples/heartbeat-example.md`](examples/heartbeat-example.md).
 
 ---
 
@@ -218,42 +166,11 @@ That prompt is outcome-focused. It describes what the system should do, not how 
 
 Most memory complaints I see come from assuming memory is automatic. It isn't, and the default behavior is confusing if you don't configure it.
 
-I made memory explicit and cheap:
-
-```json
-"memorySearch": {
-  "sources": ["memory", "sessions"],
-  "experimental": { "sessionMemory": true },
-  "provider": "openai",
-  "model": "text-embedding-3-small"
-}
-```
-
-I also prune context based on time:
-
-```json
-"contextPruning": {
-  "mode": "cache-ttl",
-  "ttl": "6h",
-  "keepLastAssistants": 3
-}
-```
-
-Compaction is where memory becomes useful:
-
-```json
-"compaction": {
-  "mode": "default",
-  "memoryFlush": {
-    "enabled": true,
-    "softThresholdTokens": 40000,
-    "prompt": "Distill this session to memory/YYYY-MM-DD.md. Focus on decisions, state changes, lessons, blockers. If nothing worth storing: NO_FLUSH",
-    "systemPrompt": "Extract only what is worth remembering. No fluff."
-  }
-}
-```
+I made memory explicit and cheap. I use cheap embeddings for search (`text-embedding-3-small`), prune context based on cache TTL (6 hours), and set up compaction to automatically flush sessions to daily memory files when they hit 40k tokens.
 
 This one change eliminated most of the "why did it forget that" moments I was having. Before I set this up, I was losing context constantly and blaming the model when it was really a configuration problem.
+
+For the specific config settings and explanations, see [`examples/config-example-guide.md`](examples/config-example-guide.md).
 
 ---
 
