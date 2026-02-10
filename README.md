@@ -39,6 +39,7 @@ The `examples/` directory contains actionable templates and references:
 - **[agent-prompts.md](examples/agent-prompts.md)** - How to create specialized agents with proper model chains
 - **[heartbeat-example.md](examples/heartbeat-example.md)** - Rotating heartbeat pattern for monitoring
 - **[skill-builder-prompt.md](examples/skill-builder-prompt.md)** - Prompt template for creating AgentSkills
+- **[task-tracking-prompt.md](examples/task-tracking-prompt.md)** - Build a task tracking system for agent visibility
 - **[security-patterns.md](examples/security-patterns.md)** - Prompt injection defense and security rules
 - **[vps-setup.md](examples/vps-setup.md)** - VPS deployment and hardening guide
 - **[sanitized-config.json](examples/sanitized-config.json)** - Example OpenClaw configuration

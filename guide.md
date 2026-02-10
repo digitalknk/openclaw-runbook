@@ -125,17 +125,11 @@ OpenClaw gets useful when you stop expecting magic and start expecting a tool th
 
 One of the bigger mental shifts for me was realizing how cheap some models are when used correctly.
 
-I run my OpenClaw heartbeat on GPT-5 Nano. Heartbeats run often, but they're just checking state. There's no reason to burn a premium model on that.
+Heartbeats run often but do simple checks. No reason to burn premium models on background plumbing. I've seen tens of thousands of heartbeat tokens cost fractions of a cent on cheap models.
 
-```json
-"heartbeat": {
-  "model": "openrouter/openai/gpt-5-nano"
-}
-```
+For the specific model recommendations and cost math, see [`examples/config-example-guide.md`](examples/config-example-guide.md#heartbeat-model-heartbeatmodel).
 
-I have usage screenshots showing tens of thousands of heartbeat tokens costing fractions of a cent. Don't waste premium models on background plumbing.
-
-Same logic for concurrency:
+Concurrency limits also matter for cost control:
 
 ```json
 "maxConcurrent": 4,
@@ -213,6 +207,8 @@ Early on, OpenClaw felt like a black box. I couldn't tell what it was doing, wha
 I fixed that by wiring up Todoist as the source of truth for task state. Tasks get created when work starts, updated as state changes, assigned to me when human intervention is required, and closed when done. If something fails, it leaves a comment on the task instead of retrying forever.
 
 A lightweight heartbeat reconciles what's open, what's in progress, and what looks stalled. It's not sophisticated, but I can glance at Todoist and know exactly where things stand without digging through logs.
+
+For a prompt template to build your own task tracking system, see [`examples/task-tracking-prompt.md`](examples/task-tracking-prompt.md).
 
 ---
 
