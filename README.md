@@ -40,6 +40,7 @@ The `examples/` directory contains actionable templates and references:
 - **[vps-setup.md](examples/vps-setup.md)** - VPS deployment and hardening guide
 - **[sanitized-config.json](examples/sanitized-config.json)** - Example OpenClaw configuration
 - **[config-example-guide.md](examples/config-example-guide.md)** - Config section reference
+- **[check-quotas.sh](examples/check-quotas.sh)** - Script to check API quota usage across providers
 
 ## Contributing
 
