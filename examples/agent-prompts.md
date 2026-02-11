@@ -390,8 +390,9 @@ Add specialized agents to your `openclaw.json` config:
         ]
       }
     },
-    "named": {
-      "monitor": {
+    "list": [
+      {
+        "id": "monitor",
         "model": {
           "primary": "openai/gpt-5-nano",
           "fallbacks": [
@@ -401,7 +402,8 @@ Add specialized agents to your `openclaw.json` config:
         },
         "systemPromptFile": "workspace/agents/monitor.md"
       },
-      "researcher": {
+      {
+        "id": "researcher",
         "model": {
           "primary": "kimi-coding/k2p5",
           "fallbacks": [
@@ -411,7 +413,7 @@ Add specialized agents to your `openclaw.json` config:
         },
         "systemPromptFile": "workspace/agents/researcher.md"
       }
-    }
+    ]
   }
 }
 ```
