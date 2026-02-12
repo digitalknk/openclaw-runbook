@@ -36,7 +36,8 @@ It includes real config snippets, explanations of why certain choices were made,
 
 The `examples/` directory contains actionable templates and references:
 
-- **[agent-prompts.md](examples/agent-prompts.md)** - How to create specialized agents with proper model chains
+- **[agent-prompts.md](examples/agent-prompts.md)** - Creating specialized agents, model chains, and coordinator/researcher/communicator patterns
+- **[spawning-patterns.md](examples/spawning-patterns.md)** - How to spawn sub-agents from skills, prompts, and cron jobs
 - **[heartbeat-example.md](examples/heartbeat-example.md)** - Rotating heartbeat pattern for monitoring
 - **[skill-builder-prompt.md](examples/skill-builder-prompt.md)** - Prompt template for creating AgentSkills
 - **[task-tracking-prompt.md](examples/task-tracking-prompt.md)** - Build a task tracking system for agent visibility
