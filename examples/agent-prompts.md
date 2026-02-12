@@ -432,6 +432,120 @@ To customize a sub-agent's behavior:
 
 The `model` configuration in `agents.list` only controls which model is used, not the system prompt.
 
+## Agent Coordination via AGENTS.md
+
+The most powerful pattern for multi-agent setups is using **AGENTS.md** as a shared instruction file. This is how you create coordinator/researcher/communicator workflows.
+
+### How It Works
+
+1. **All agents** (main and sub-agents) receive AGENTS.md in their context
+2. Each agent finds its own section and follows those instructions
+3. The coordinator knows which agents to spawn because AGENTS.md defines the roles
+
+### Example AGENTS.md Structure
+
+```markdown
+# Agent Instructions
+
+## Coordinator Agent
+
+When spawned as "coordinator":
+
+1. Analyze the incoming task
+2. Break into subtasks if needed
+3. Spawn appropriate specialists:
+   - "researcher" for web research, data gathering
+   - "communicator" for writing, emails, responses
+   - "coder" for code generation, debugging
+4. Wait for each result before spawning the next
+5. Synthesize results into final answer
+6. Return to parent agent
+
+Spawn format: sessions_spawn({ agentId: "AGENT_NAME", task: "clear instructions" })
+
+## Researcher Agent
+
+When spawned as "researcher":
+
+1. Use web_search to find information
+2. Verify sources when possible
+3. Return concise, factual findings
+4. Cite URLs for key claims
+
+Constraints:
+- No speculative claims
+- Prefer recent sources
+- Note confidence level
+
+## Communicator Agent
+
+When spawned as "communicator":
+
+1. Write in the user's preferred style (check USER.md)
+2. Match tone to context (professional/casual)
+3. No em dashes, no emojis
+4. Get approval before sending anything external
+
+Return draft text, do not send directly.
+```
+
+### Example Flow
+
+**User asks main agent:** "What's the weather and should I bring an umbrella?"
+
+**Main agent spawns coordinator:**
+```javascript
+sessions_spawn({
+  agentId: "coordinator",
+  task: "User wants weather info and umbrella recommendation for [location]"
+})
+```
+
+**Coordinator (reads AGENTS.md, sees it's coordinator):**
+1. Decides it needs weather data
+2. Spawns researcher: `sessions_spawn({ agentId: "researcher", task: "Get weather forecast for [location]" })`
+3. Receives: "Rain expected at 3 PM, 80% chance"
+4. Spawns communicator: `sessions_spawn({ agentId: "communicator", task: "Advise user to bring umbrella. Rain at 3 PM, 80% chance." })`
+5. Receives draft response
+6. Returns to main agent: "Bring an umbrella. Rain starts at 3 PM with 80% chance."
+
+**Main agent returns to user:** "Bring an umbrella. Rain starts at 3 PM with 80% chance."
+
+### Key Points
+
+- **One file, multiple agents:** AGENTS.md contains instructions for all your agents
+- **Self-identifying:** Each agent finds its own "When spawned as..." section
+- **Explicit delegation:** The coordinator decides when to spawn whom based on the task
+- **Sequential or parallel:** Coordinator can spawn one at a time or multiple at once
+
+### Config Structure
+
+```json
+{
+  "agents": {
+    "list": [
+      {
+        "id": "coordinator",
+        "model": { "primary": "sonnet" },
+        "tools": ["sessions_spawn", "memory_search"]
+      },
+      {
+        "id": "researcher",
+        "model": { "primary": "gemini" },
+        "tools": ["web_search", "browser"]
+      },
+      {
+        "id": "communicator",
+        "model": { "primary": "sonnet" },
+        "tools": ["message", "email"]
+      }
+    ]
+  }
+}
+```
+
+Note: No systemPromptFile needed. The instructions come from AGENTS.md which is automatically injected.
+
 ## General Agent Configuration Tips
 
 **Model Selection Strategy:**
