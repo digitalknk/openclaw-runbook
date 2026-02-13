@@ -759,3 +759,11 @@ Some security configurations may not work correctly with Olama models:
 - Anthropic Security Best Practices: https://www.anthropic.com/security
 - OpenAI Security: https://openai.com/security
 - OWASP LLM Top 10: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+
+## Quick Start
+
+New to OpenClaw security? Start with [security-quickstart.md](security-quickstart.md) for copy-paste prompts to implement basic hardening.
+
+## Source
+
+Based on security research from the OpenClaw community and comprehensive security methodology shared by ScaleUP Media.
