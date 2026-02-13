@@ -1,6 +1,6 @@
 # OpenClaw Security Quick Start
 
-New to OpenClaw security? Start here. These prompts help you implement basic security hardening step by step.
+New to OpenClaw security? Start here. These prompts help you implement basic security step by step.
 
 For complete configuration reference, see [security-hardening.md](security-hardening.md).
 
@@ -8,37 +8,34 @@ For complete configuration reference, see [security-hardening.md](security-harde
 
 ## Before You Start
 
-**Back up your configuration:**
+**Back up first:**
 ```bash
 tar -czf ~/openclaw-backup-$(date +%Y%m%d).tar.gz ~/.openclaw/
 ```
 
-**Test in a safe environment first.** These changes can restrict agent functionality.
+**Test changes carefully.** Security hardening can restrict agent functionality.
 
 ---
 
 ## Prompt 1: Security Audit
 
-Copy and paste this to audit your current OpenClaw security:
+Audit your current OpenClaw security:
 
 ```
-Audit my OpenClaw deployment at ~/.openclaw/ for security issues.
+Check my OpenClaw deployment at ~/.openclaw/ for security issues:
 
-Check the following in openclaw.json:
-1. Are API keys hardcoded anywhere, or are they using env var substitution (${VAR})?
-2. What tools are currently allowed? List any dangerous tools (exec, cron, gateway, nodes).
-3. Is logging.redactSensitive enabled?
-4. What is the gateway bind setting? (Should be "loopback" for local deployments)
-5. Are there any agents without workspace restrictions that might create isolated directories?
+1. In openclaw.json, check:
+   - Are API keys hardcoded or using env vars (${VAR})?
+   - Which tools are allowed? List dangerous ones (exec, cron, gateway)
+   - Is logging.redactSensitive enabled?
+   - Is gateway.bind set to loopback?
 
-Check file permissions:
-6. What are the permissions on ~/.openclaw/ and ~/.openclaw/openclaw.json?
+2. Check file permissions on ~/.openclaw/ and openclaw.json
 
-Report findings with severity:
-- CRITICAL: Fix immediately
+Report as:
+- CRITICAL: Fix immediately  
 - HIGH: Fix today
 - MEDIUM: Fix this week
-- LOW: Address when convenient
 ```
 
 ---
@@ -48,9 +45,9 @@ Report findings with severity:
 Implement core security controls:
 
 ```
-Update my OpenClaw configuration at ~/.openclaw/openclaw.json to implement these security controls:
+Update ~/.openclaw/openclaw.json with these security controls:
 
-1. Add environment variable section if missing:
+1. Add environment variables section:
 {
   "env": {
     "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
@@ -59,49 +56,49 @@ Update my OpenClaw configuration at ~/.openclaw/openclaw.json to implement these
   }
 }
 
-2. Set up default tool policies to deny dangerous tools:
+2. Set default tool policies:
 {
   "agents": {
     "defaults": {
       "tools": {
-        "allow": ["read", "write", "edit", "web_search", "web_fetch"],
-        "deny": ["exec", "process", "cron", "gateway", "nodes"]
+        "allow": ["read", "write", "edit", "web_search"],
+        "deny": ["exec", "cron", "gateway", "nodes"]
       }
     }
   }
 }
 
-3. Enable sensitive data redaction:
+3. Enable logging redaction:
 {
   "logging": {
     "redactSensitive": "tools"
   }
 }
 
-4. Secure the gateway (for local deployments):
+4. Secure gateway:
 {
   "gateway": {
     "bind": "loopback",
     "auth": {
-      "mode": "token",
+      "mode": "token", 
       "token": "${GATEWAY_TOKEN}"
     }
   }
 }
 
-Show me the complete updated configuration. Do not restart anything yet.
+Show the complete updated config.
 ```
 
 ---
 
 ## Prompt 3: Cost Protection
 
-Set up cost controls to prevent runaway bills:
+Prevent surprise bills:
 
 ```
-Add cost protection to my OpenClaw configuration:
+Add cost protection to my OpenClaw config:
 
-1. Add model costs to track spending:
+1. Track model costs:
 {
   "models": {
     "providers": {
@@ -112,12 +109,8 @@ Add cost protection to my OpenClaw configuration:
             "cost": { "input": 5.0, "output": 25.0 }
           },
           {
-            "id": "claude-sonnet-4-5",
+            "id": "claude-sonnet-4-5", 
             "cost": { "input": 3.0, "output": 15.0 }
-          },
-          {
-            "id": "claude-haiku-4-5",
-            "cost": { "input": 1.0, "output": 5.0 }
           }
         ]
       }
@@ -125,90 +118,85 @@ Add cost protection to my OpenClaw configuration:
   }
 }
 
-2. Restrict expensive models to specific agents only:
-Create a "researcher" agent that can use Opus, and a "monitor" agent that only uses Haiku.
+2. Create agents with appropriate models:
+   - "monitor" agent: use gpt-5-nano only
+   - "researcher" agent: use kimi/k2p5 or sonnet
+   - No agent should default to Opus
 
-3. Set up agent configurations that prevent Opus from being used by:
-   - Cron jobs
-   - Public-facing agents
-   - Monitoring agents
+3. Ensure Opus cannot be used by cron jobs or public-facing agents
 
-Show me which agents should have which model access.
+Show which agents get which models.
 ```
 
-**Note:** You must also set up cost alerts in your Anthropic/OpenAI dashboards. The config above tracks costs but doesn't set hard limits.
+**Important:** Also set hard limits in your Anthropic/OpenAI dashboards. Config tracking alone won't stop bills.
 
 ---
 
 ## Prompt 4: Backup Setup
 
-Create an automated backup:
+Create automated backups:
 
 ```
-Create a backup script for my OpenClaw configuration at ~/.openclaw/:
+Create a backup script at ~/.openclaw/scripts/backup.sh:
 
 Requirements:
-1. Script location: ~/.openclaw/scripts/backup.sh
-2. Backup location: ~/backups/openclaw/YYYY-MM-DD/
-3. Include these files:
-   - openclaw.json (main config)
-   - workspace/*.md (AGENTS.md, SOUL.md, TOOLS.md, etc.)
-   - memory/*.md (last 30 days only)
-4. Encrypt the backup with gpg
-5. Clean up backups older than 90 days
-6. Make the script executable
+1. Backup location: ~/backups/openclaw/YYYY-MM-DD/
+2. Include:
+   - openclaw.json
+   - workspace/*.md (AGENTS.md, SOUL.md, etc)
+   - memory/*.md (last 30 days)
+3. Encrypt with gpg
+4. Make executable
+5. Set up cron for daily 2 AM runs
 
-Also create a cron job that runs this daily at 2 AM.
-
-Provide the complete script and cron configuration.
+Provide the complete script and cron line.
 ```
 
 ---
 
-## What These Prompts Do
+## What Each Prompt Does
 
-| Prompt | Security Level | Risk | Time |
-|--------|---------------|------|------|
-| Audit | Assessment | None | 5 min |
-| Basic Hardening | Medium | May restrict some agent capabilities | 15 min |
-| Cost Protection | High | May block expensive model requests | 10 min |
-| Backup Setup | Essential | None | 10 min |
+| Prompt | Time | Risk |
+|--------|------|------|
+| Audit | 5 min | None |
+| Hardening | 15 min | May limit agent capabilities |
+| Cost Control | 10 min | May block expensive requests |
+| Backup | 10 min | None |
 
 ---
 
 ## Next Steps
 
-After running these prompts:
+After these prompts:
 
-1. **Review the changes** - Make sure you understand what was modified
-2. **Test your agents** - Verify they still work as expected
-3. **Check the full guide** - See [security-hardening.md](security-hardening.md) for:
+1. **Review changes** - Make sure you understand what was modified
+2. **Test agents** - Verify they still work as expected  
+3. **Read the full guide** - See [security-hardening.md](security-hardening.md) for:
    - Detailed tool policy examples
-   - Rate limiting configuration
+   - Rate limiting
    - Prompt injection defense
-   - Emergency response procedures
-   - Security maintenance schedules
+   - Emergency procedures
 
 ---
 
 ## Troubleshooting
 
 **Agents stopped working:**
-- Check tool policies - you may have blocked a tool the agent needs
+- Check tool policies - you may have blocked a needed tool
 - Review the "deny" list in agents.defaults.tools
 
 **Can't access gateway:**
-- If you set `bind: loopback`, you can only access from the local machine
-- This is correct for local deployments, but check your use case
+- `bind: loopback` means local access only
+- This is correct for local deployments
 
 **Costs still high:**
-- Dashboard limits at the provider level are more important than config tracking
+- Dashboard limits at providers matter more than config
 - Set hard limits in Anthropic/OpenAI dashboards
 
 ---
 
-## Source
+## References
 
-Based on security best practices from the OpenClaw community and security research.
-
-For the complete security methodology and additional hardening steps, see [security-hardening.md](security-hardening.md).
+- [security-hardening.md](security-hardening.md) - Complete security reference
+- OpenClaw Docs: https://docs.openclaw.ai/gateway/security
+- OWASP LLM Top 10: https://owasp.org/www-project-top-10-for-large-language-model-applications/
