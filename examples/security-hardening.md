@@ -52,7 +52,7 @@ export OPENAI_API_KEY="sk-..."
 | Production | 90 days |
 | Development | 30 days |
 
-**Real example:** Someone had keys exposed in git history from months ago. Rotate immediately if you find any.
+**Rotate immediately** if you find any keys in history. Even old commits remain accessible forever.
 
 ### Check for Exposed Secrets
 
@@ -126,7 +126,7 @@ Lock down what agents can do by default.
 
 ## 3. Cost Controls
 
-**Real story:** Someone ran Opus overnight without limits and got a $3,000 surprise bill. Set hard limits.
+**Set hard limits.** Running premium models without constraints can accumulate significant costs quickly.
 
 ### Provider Dashboard Limits
 
