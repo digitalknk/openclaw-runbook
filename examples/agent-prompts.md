@@ -546,6 +546,42 @@ sessions_spawn({
 
 Note: No systemPromptFile needed. The instructions come from AGENTS.md which is automatically injected.
 
+### Important: Workspace Isolation
+
+By default, each agent gets its own isolated workspace. This is critical to understand for multi-agent setups.
+
+**Default behavior:**
+- Each agent defined in `agents.list` creates `workspace-{agentId}/` on first activation
+- Each spawned agent via `sessions_spawn` creates `workspace-{agentId}/` on spawn
+- Each workspace has its own AGENTS.md, SOUL.md, etc.
+
+**For shared AGENTS.md (one file, multiple sections):**
+
+All agents must explicitly point to the same workspace:
+
+```json
+{
+  "agents": {
+    "list": [
+      {
+        "id": "coordinator",
+        "workspace": "~/.openclaw/workspace"
+      },
+      {
+        "id": "researcher", 
+        "workspace": "~/.openclaw/workspace"
+      },
+      {
+        "id": "communicator",
+        "workspace": "~/.openclaw/workspace"
+      }
+    ]
+  }
+}
+```
+
+Without explicit `workspace`, each agent gets its own directory and its own (empty) AGENTS.md file. They will not share context.
+
 ## General Agent Configuration Tips
 
 **Model Selection Strategy:**

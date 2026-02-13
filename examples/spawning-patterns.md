@@ -269,6 +269,14 @@ sessions_spawn({
 });
 ```
 
+**Workspace Note:** When you spawn an agent via `sessions_spawn`, it creates `workspace-{agentId}/` automatically with its own (empty) AGENTS.md. 
+
+If you want spawned agents to share your main workspace and AGENTS.md, you must:
+1. Define the agent in `agents.list` with explicit `workspace: "~/.openclaw/workspace"`, OR
+2. Copy AGENTS.md to the spawned agent's workspace before spawning
+
+For shared context across spawned agents, pre-define them in config with explicit workspace paths.
+
 ---
 
 ## Debugging Spawns
