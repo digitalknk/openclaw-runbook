@@ -41,6 +41,8 @@ The `examples/` directory contains actionable templates and references:
 - **[heartbeat-example.md](examples/heartbeat-example.md)** - Rotating heartbeat pattern for monitoring
 - **[skill-builder-prompt.md](examples/skill-builder-prompt.md)** - Prompt template for creating AgentSkills
 - **[task-tracking-prompt.md](examples/task-tracking-prompt.md)** - Build a task tracking system for agent visibility
+- **[security-hardening.md](examples/security-hardening.md)** - Production security: API keys, tool policies, cost controls, network lockdown
+- **[security-quickstart.md](examples/security-quickstart.md)** - Copy-paste prompts to implement basic security controls
 - **[security-patterns.md](examples/security-patterns.md)** - Prompt injection defense and security rules
 - **[vps-setup.md](examples/vps-setup.md)** - VPS deployment and hardening guide
 - **[sanitized-config.json](examples/sanitized-config.json)** - Example OpenClaw configuration
