@@ -130,6 +130,8 @@ Lock down what agents can do by default.
 
 ### Provider Dashboard Limits
 
+**⚠️ Anthropic Subscription Warning:** Anthropic prohibits using their **subscription plans** (like Claude Pro) for OpenClaw or any automation outside their ecosystem. This carries a high ban risk. API usage is fine—subscriptions are not.
+
 Set these in Anthropic/OpenAI dashboards:
 
 | Provider | Daily Limit | Alerts At |
