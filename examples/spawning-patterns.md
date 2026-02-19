@@ -9,6 +9,36 @@ How to spawn sub-agents from different contexts in OpenClaw.
 | From a skill | `sessions_spawn()` in code | Orchestration, parallel work |
 | From an agent | `sessions_spawn` tool in prompt | Self-delegation |
 | From cron | Inline or spawn in payload | Scheduled isolated tasks |
+| From chat | `/subagents spawn` command | Manual activation from any channel |
+
+---
+
+## Chat Command: `/subagents spawn`
+
+**Available in:** OpenClaw 2026.2.17+
+
+Spawn a subagent directly from chat without using the tool interface.
+
+**Usage:**
+```
+/subagents spawn <agent-id> <task>
+```
+
+**Example:**
+```
+/subagents spawn researcher "Find recent papers on transformer architectures"
+```
+
+**When to use:**
+- Quick one-off tasks from mobile/chat
+- When you want deterministic activation without the agent deciding to spawn
+- Testing agent configurations without modifying prompts
+
+**Notes:**
+- The agent must exist in your `agents.list` config
+- Same timeout and behavior as `sessions_spawn` tool
+- Results return to the same chat thread
+- Polling subagents are disabled for one-off chat commands (no `wait` needed)
 
 ---
 
