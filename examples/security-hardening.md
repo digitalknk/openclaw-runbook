@@ -294,7 +294,7 @@ Each pairing grants persistent access. Once authenticated, that connection stays
 - Old Telegram bot pairings from test accounts still having access
 - Former team members with active dashboard sessions
 - Browser pairings from shared or public computers
-- Unknown pairings from exposed QR codes or leaked setup codes
+- iOS or node pairings that were not cleaned up after testing
 
 Pairing is convenient but creates persistent entry points. Review them like you review active API keys or SSH sessions.
 
