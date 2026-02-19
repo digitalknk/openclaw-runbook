@@ -282,15 +282,21 @@ OpenClaw allows pairing devices (iOS, other nodes) to your gateway. Stale or una
 
 ### Why This Matters
 
-Paired devices stay trusted. Once paired, a device can reconnect automatically without re-authentication. Depending on your config, paired devices can run agents, access sessions, or execute tools. They also stay in the paired list even after you rotate the gateway token.
+"Devices" here means any authenticated connection to your gateway. This includes:
+
+- **Channel bots** (Telegram, Discord, WhatsApp) after you complete pairing
+- **Browser sessions** accessing the web dashboard (mobile or desktop)
+- **iOS node app** or other node connections
+
+Each pairing grants persistent access. Once authenticated, that connection stays trusted and can reconnect without a new code. Depending on your config, paired connections can run agents, access sessions, or execute tools. They also survive gateway token rotation.
 
 **Risks of ignoring device hygiene:**
-- Lost or stolen phones keeping access to your gateway
-- Former colleagues or family members with ongoing access
-- Unknown devices from QR codes shared in screenshots
-- Compromised devices used to launch further attacks
+- Old Telegram bot pairings from test accounts still having access
+- Former team members with active dashboard sessions
+- Browser pairings from shared or public computers
+- Unknown pairings from exposed QR codes or leaked setup codes
 
-Device pairing is convenient. It is also a persistent entry point. Handle it like SSH keys or API credentials.
+Pairing is convenient but creates persistent entry points. Review them like you review active API keys or SSH sessions.
 
 ### List Paired Devices
 
