@@ -22,6 +22,7 @@ Stay organized without manual effort.
 |----------|--------------|---------------|
 | [daily-brief](daily-brief.md) | Morning summary (weather, calendar, tasks) | Balanced tier |
 | [idea-pipeline](idea-pipeline.md) | Overnight research on your ideas | Research tier |
+| [coeus-knowledge-base](coeus-knowledge-base.md) | Self-hosted knowledge capture with semantic search | Any (local CPU) |
 
 ### Content & Research
 Automate research and content creation.

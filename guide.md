@@ -254,7 +254,13 @@ If you scope models, cap concurrency, and keep background work on cheap models, 
 
 ## On Anthropic bans
 
-From what I've seen, bans usually come down to how aggressively Claude is being hit through the API, not OpenClaw itself. I'm not saying bans never happen. The cases I've seen were tied to aggressive automated usage patterns, not simply running OpenClaw. If you're not hammering the API beyond normal usage, there's no obvious reason to worry about it.
+**Important update:** Anthropic has officially stated that using their **subscription plans** for OpenClaw or any use outside their ecosystem carries a very high risk of account bans. This does not apply to API usage—you can use the Anthropic API directly without the same ban risk.
+
+The distinction matters: subscription plans (like Claude Pro) are intended for individual use within Anthropic's ecosystem. Using them for automation via OpenClaw violates their terms. API keys are designed for programmatic use.
+
+My recommendation: do not use Anthropic **subscription plans** for OpenClaw. If you want Claude models, use the API directly or route through OpenRouter.
+
+I have updated my own setup to avoid direct Anthropic subscriptions for OpenClaw usage. The fallback chain in my config reflects this.
 
 ---
 
