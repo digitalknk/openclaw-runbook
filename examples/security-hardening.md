@@ -276,7 +276,84 @@ chmod 700 ~/.openclaw/credentials
 
 ---
 
-## 7. Backup
+## 7. Device Pairing Hygiene
+
+OpenClaw allows pairing devices (iOS, other nodes) to your gateway. Stale or unauthorized paired devices can be a security risk.
+
+### Why This Matters
+
+"Devices" here means any authenticated connection to your gateway. This includes:
+
+- **Channel bots** (Telegram, Discord, WhatsApp) after you complete pairing
+- **Browser sessions** accessing the web dashboard (mobile or desktop)
+- **iOS node app** or other node connections
+
+Each pairing grants persistent access. Once authenticated, that connection stays trusted and can reconnect without a new code. Depending on your config, paired connections can run agents, access sessions, or execute tools. They also survive gateway token rotation.
+
+**Risks of ignoring device hygiene:**
+- Old Telegram bot pairings from test accounts still having access
+- Former team members with active dashboard sessions
+- Browser pairings from shared or public computers
+- iOS or node pairings that were not cleaned up after testing
+
+Pairing is convenient but creates persistent entry points. Review them like you review active API keys or SSH sessions.
+
+### List Paired Devices
+
+```bash
+openclaw devices list
+```
+
+Shows all paired and pending devices with their device IDs and pairing status.
+
+### Remove a Specific Device
+
+```bash
+openclaw devices remove <device-id>
+```
+
+Removes a single paired device. Use this when:
+- A device is lost or stolen
+- You no longer use a paired device
+- You see unknown devices in the list
+
+### Clear All Devices (Dangerous)
+
+```bash
+# Remove all paired devices
+openclaw devices clear --yes
+
+# Remove pending requests only
+openclaw devices clear --yes --pending
+```
+
+**When to use:**
+- Compromised gateway token
+- Selling/giving away the host machine
+- Starting fresh after configuration drift
+
+### Review Paired Devices Regularly
+
+Add to your monthly security checklist:
+
+1. Run `openclaw devices list`
+2. Verify each device is known and expected
+3. Remove any stale or unrecognized devices
+4. Rotate gateway token if unknown devices appear
+
+### Gateway Token Rotation
+
+If you rotate your gateway token, stale paired devices cannot re-authenticate. Clear them and re-pair:
+
+```bash
+# Generate new token in config, then:
+openclaw devices clear --yes
+# Re-pair your devices with the new QR/code
+```
+
+---
+
+## 8. Backup
 
 ### Critical Files
 
@@ -304,7 +381,7 @@ Test restoring a backup quarterly. A backup you can't restore is useless.
 
 ---
 
-## 8. Emergency Response
+## 9. Emergency Response
 
 ### Key Compromised
 
@@ -344,6 +421,7 @@ openclaw config set channels.discord.enabled false
 | Cost alerts at provider | ☐ |
 | `logging.redactSensitive` on | ☐ |
 | Gateway bind is loopback | ☐ |
+| Device list reviewed (monthly) | ☐ |
 | Backups running | ☐ |
 | Backup tested | ☐ |
 
