@@ -1,6 +1,13 @@
+> 🌐 This is a bilingual (Chinese/English) fork of [digitalknk/openclaw-runbook](https://github.com/digitalknk/openclaw-runbook).
+> 本仓库是 [digitalknk/openclaw-runbook](https://github.com/digitalknk/openclaw-runbook) 的中英双语翻译版本。
+
+**[English Version](#) (below)** | **[中文版本](./zh/README.md)**
+
+---
+
 # OpenClaw Runbook (Non-Hype Edition)
 
-> Tested with OpenClaw 2026.2.x  
+> Tested with OpenClaw 2026.2.x
 > AI-assisted documentation created with Claude
 
 This repo contains a practical guide for running OpenClaw day to day without burning money, quotas, or your sanity.
