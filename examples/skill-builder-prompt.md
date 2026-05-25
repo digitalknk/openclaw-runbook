@@ -1,151 +1,143 @@
 # Skill Builder Prompt
 
-This prompt helps you create or optimize AgentSkills following best practices.
+Use this prompt when you want your agent to create a local OpenClaw skill or rebuild one from an idea you found elsewhere.
 
-## About AgentSkills
-
-The [AgentSkills specification](https://agentskills.io/) provides a structure for creating maintainable, token-efficient skills. This prompt follows that model.
+The preferred pattern in this runbook is not to install third-party skills blindly. Use ClawHub or a GitHub repo as source material, inspect it, then rebuild the behavior locally with only the tools and instructions you need.
 
 ## Prompt Template
 
-Copy and customize this prompt to have your agent create or refactor a skill:
+Copy and customize this prompt:
 
-```
-I need help creating or optimizing an AgentSkill.
+```text
+I need help creating or rebuilding an OpenClaw skill.
 
 Skill name:
 [your-skill-name]
 
 Purpose:
-What the skill does and when it should activate.
+[what the skill does and when it should activate]
+
+Source or inspiration:
+[ClawHub page, GitHub repo, docs, or notes to inspect]
+
+Keep from the source:
+[specific behavior worth preserving]
+
+Do not keep:
+[unwanted commands, broad permissions, dependencies, network calls, tone, or scope]
 
 Triggers:
-What kinds of tasks or questions should activate this skill.
+[tasks or questions that should activate this skill]
 
 Tools needed:
-Any tools, commands, or APIs the skill will use.
+[tools, commands, APIs, or files it can use]
+
+Security boundaries:
+[secrets policy, confirmation requirements, allowed paths, network limits]
 
 Reference docs:
-Docs or specs that should live in references/ for on-demand loading.
+[docs/specs that should live in references/ for on-demand loading]
 
-Existing skill (if applicable):
-Path to the current SKILL.md if this is a refactor.
-
-Please:
-- Create or optimize the skill following AgentSkills best practices
-- Keep the core workflow in SKILL.md and move details into references/
-- Keep SKILL.md under ~500 lines
-- Validate the structure using the AgentSkills validator
-- Show the final file structure and contents
-```
-
-## Why Hard Constraints Matter
-
-Vague instructions produce bloated, token-hungry skills every time. The hard constraint on line count (~500 lines) forces the agent to:
-
-- Put core workflow in SKILL.md
-- Move details into references/ for on-demand loading
-- Keep token usage low
-- Make the skill maintainable
-
-Without constraints, you'll get a 2,000-line skill file that eats half your context window.
-
-## Example Usage
-
-**Creating a new skill:**
-
-```
-I need help creating an AgentSkill.
-
-Skill name:
-weather-checker
-
-Purpose:
-Check current weather and forecasts using wttr.in (no API key required).
-
-Triggers:
-Questions about weather, temperature, forecast.
-
-Tools needed:
-curl to fetch from wttr.in, parsing text output.
-
-Reference docs:
-wttr.in documentation should live in references/wttr-in-docs.md
+Existing local skill, if any:
+[path to SKILL.md]
 
 Please:
-- Create the skill following AgentSkills best practices
-- Keep the core workflow in SKILL.md under ~500 lines
-- Move API details into references/
-- Show the final file structure and contents
+- Build a local skill rather than installing third-party code.
+- Keep SKILL.md focused on activation rules and core workflow.
+- Move long examples, API docs, and error tables into references/.
+- Keep SKILL.md under about 500 lines unless there is a clear reason.
+- Include any helper scripts separately under scripts/.
+- Show the final file tree and the contents of new or changed files.
+- Call out the exact tools the skill expects to use.
+- Call out anything from the source you intentionally did not copy.
 ```
 
-**Refactoring an existing skill:**
+## Why Rebuild Instead of Install
 
+Third-party skills can be useful to read. They can also carry:
+
+- broader tool access than you need;
+- assumptions about another person's workspace;
+- hidden network or shell behavior;
+- stale commands;
+- prompt bloat;
+- dependencies you do not want to maintain.
+
+Rebuilding locally gives you a smaller skill that matches your setup and is easier to debug.
+
+## Example: Build From an Idea
+
+```text
+I found a weather skill on ClawHub. Do not install it.
+
+Inspect the public source, then build my own local skill named weather-checker.
+
+Keep:
+- current weather lookup
+- 3-day forecast
+- no API key requirement
+
+Do not keep:
+- any location tracking
+- any background scheduling
+- any write access
+
+Tools:
+- OpenClaw web fetch or curl against wttr.in only
+
+Security:
+- never store location history
+- ask before using a non-user-provided location
+
+Please create the local skill with a short SKILL.md, references/wttr.md, and no extra dependencies.
 ```
-I need help optimizing an AgentSkill.
+
+## Example: Refactor a Bloated Skill
+
+```text
+I need help shrinking an OpenClaw skill.
 
 Existing skill:
 ~/.openclaw/workspace/skills/my-bloated-skill/SKILL.md
 
-Purpose:
-The skill works but SKILL.md is 1,800 lines and burns too many tokens.
+Problem:
+SKILL.md is 1,800 lines and burns too much context.
 
 Please:
-- Refactor following AgentSkills best practices
-- Keep core workflow in SKILL.md under ~500 lines
-- Move details into references/ for on-demand loading
-- Validate the structure
-- Show what changed
+- preserve behavior;
+- keep activation rules and core workflow in SKILL.md;
+- move details into references/;
+- move reusable commands into scripts/ if helpful;
+- remove generic advice and duplicated examples;
+- show what changed.
 ```
 
-## Skill Structure
+## Recommended Structure
 
-A well-structured skill looks like:
-
-```
+```text
 skills/
 └── your-skill-name/
-    ├── SKILL.md              # Core workflow (~500 lines max)
-    ├── references/           # Loaded on-demand
-    │   ├── api-docs.md
+    ├── SKILL.md
+    ├── references/
+    │   ├── api.md
     │   └── examples.md
-    └── scripts/              # Optional executables
+    └── scripts/
         └── helper.sh
 ```
 
-## Best Practices
+## Local Review Checklist
 
-**Keep SKILL.md focused:**
-- Describe when to trigger
-- Show the core workflow
-- Reference details in references/
+- Does the skill name match its real purpose?
+- Are triggers narrow enough?
+- Are secrets excluded?
+- Are destructive actions gated by confirmation?
+- Are references loaded only when needed?
+- Are command paths and external URLs explicit?
+- Does the skill need every tool it asks for?
+- Can you test it without giving it broad access?
 
-**Use references/ for:**
-- API documentation
-- Detailed examples
-- Error handling tables
-- Command syntax reference
+## Related
 
-**Test before deploying:**
-- Run a test task
-- Check token usage
-- Verify it loads only what it needs
-
-## Community Skills
-
-Be cautious with third-party skills. A poorly written or malicious skill can cause real problems. Treat community skills as inspiration rather than drop-ins.
-
-Building your own gives you:
-- Full understanding of what it does
-- Control over token usage
-- No dependency on external maintainers
-- Better debugging at 2am
-
-## Security
-
-Set basic rules in your workspace memory files:
-- Never expose secrets or API keys
-- Ask before external actions
-- Verify before destructive operations
-
-Not foolproof, but it helps as a guardrail.
+- [Config guide](config-example-guide.md)
+- [Security hardening](security-hardening.md)
+- [Spawning patterns](spawning-patterns.md)
