@@ -2,306 +2,385 @@
 
 ## TL;DR
 
-OpenClaw is useful, but most of the pain people run into comes from letting one model do everything, chasing hype, or running expensive models in places that don't need them.
+OpenClaw is useful when you treat it like infrastructure instead of a chatbot.
 
-What worked for me was treating OpenClaw like infrastructure instead of a chatbot. Keep a cheap model as the coordinator, use agents for real work, be explicit about routing, and make memory and task state visible. Cheap models handle background work fine. Strong models are powerful when you call them intentionally instead of leaving them as defaults.
+The setup that has held up for me is simple: keep access private, make model routing explicit, use the built-in task and memory systems, keep skills local, and do not expose the Gateway just because remote access sounds convenient.
 
-You don't need expensive hardware, and you don't need to host giant local models to get value out of this. Start small, get things stable before letting it run all the time, and avoid the hype train. If something feels broken, check the official docs and issues first. OpenClaw changes fast, and sometimes it really is just a bug.
+My current setup is Tailscale-first. The Gateway stays loopback-bound, and I reach the Control UI through Tailscale, even when I am local. If you do not want Tailscale, keep OpenClaw local and use Telegram or another channel for remote access instead.
 
-If you want flashy demos and YouTube thumbnails with shocked faces, this probably isn't it. The rest of this post covers what boring, day-to-day usage actually looks like.
+This guide was refreshed against the local OpenClaw docs at commit `5dccba7405` from `2026-05-25`. OpenClaw changes fast, so check the official docs and recent issues before assuming your config is broken.
 
----
+- [OpenClaw Docs](https://docs.openclaw.ai/)
+- [OpenClaw FAQ](https://docs.openclaw.ai/help/faq)
+- [OpenClaw GitHub Issues](https://github.com/openclaw/openclaw/issues)
+- [OpenClaw Pull Requests](https://github.com/openclaw/openclaw/pulls)
 
-I kept seeing the same questions come up around OpenClaw. People asking why it feels slow, why it keeps planning instead of doing, why it forgets things, or why free tiers disappear overnight. After answering the same threads over and over, it made more sense to write this once and link it.
+## Start with current onboarding
 
-This is not official guidance, and I am not affiliated with OpenClaw or any model provider. This is simply what I learned by running it, breaking it, and doing that loop more times than I'd like to admit.
+If you are setting up OpenClaw from scratch, use the current onboarding flow:
 
-One thing up front: OpenClaw changes fast. Sometimes daily, sometimes more. When something strange happens, it isn't always because you misconfigured something. Sometimes it's a regression, a bug, or a feature that just landed.
+```bash
+openclaw onboard --install-daemon
+openclaw gateway status
+openclaw dashboard
+```
 
-Before taking blind advice from anyone on the internet, including me, check the official OpenClaw resources first:
+Current docs recommend Node 24. Node 22.19+ is still supported.
 
-- [https://docs.openclaw.ai/help/faq](https://docs.openclaw.ai/help/faq)
-- [https://docs.openclaw.ai/](https://docs.openclaw.ai/)
-- [https://github.com/openclaw/openclaw/issues](https://github.com/openclaw/openclaw/issues)
-- [https://github.com/openclaw/openclaw/pulls](https://github.com/openclaw/openclaw/pulls)
+Most people should start with the stable install or the macOS app and let OpenClaw manage the Gateway. Source checkouts are useful when you want to track dev changes, but they add moving parts. If you do run from source, keep your personal config and workspace outside the repo:
 
-Reading open issues and recent PRs has saved me hours. More than once I thought I broke something, only to realize it was already known and actively being worked on.
+- config: `~/.openclaw/openclaw.json`
+- workspace: `~/.openclaw/workspace`
 
----
+That way updates do not overwrite your prompts, memory, or skill work.
+
+## My access model: Tailscale first
+
+I strongly recommend using Tailscale for Control UI and dashboard access.
+
+My config keeps the Gateway local:
+
+```json
+"gateway": {
+  "mode": "local",
+  "port": 18789,
+  "bind": "loopback",
+  "auth": {
+    "mode": "token",
+    "token": "<REDACTED_GATEWAY_TOKEN>"
+  },
+  "tailscale": {
+    "mode": "serve",
+    "resetOnExit": true
+  },
+  "controlUi": {
+    "allowInsecureAuth": true,
+    "allowedOrigins": ["https://<YOUR_TAILSCALE_HOSTNAME>"]
+  }
+}
+```
+
+The important part is not `allowInsecureAuth`. The important part is the boundary: loopback Gateway, token auth, explicit origins, and Tailscale as the access path.
+
+Do not copy `allowInsecureAuth: true` into a public-web setup. In this runbook it belongs to a controlled Tailnet-only setup. If you are not using Tailscale, leave the Gateway local and talk to the agent through Telegram, iMessage, Discord, or another configured channel.
+
+I do not recommend public ports, casual LAN exposure, or a public reverse proxy as the first answer.
 
 ## The mistake most people make early on
 
-The most common mistake is treating OpenClaw like a single super-intelligent chatbot that should handle everything at once. Conversation, planning, research, coding, memory, task tracking, monitoring. All through one model, all the time.
+The common mistake is treating one default agent as a single super-assistant that should do everything: chat, research, coding, memory, scheduling, monitoring, and tool use.
 
-That setup ends in endless follow-up questions, permission loops, silent failures, and burned quotas. When it works, it's expensive. When it breaks, it's hard to tell why.
+That setup burns tokens, hides failure modes, and makes cost hard to reason about.
 
-What clicked for me was that the main model should be a coordinator, not a worker. The default agent should be capable but not overkill. Expensive models stay out of the hot path.
+The better pattern is coordinator plus workers:
 
-My config looks roughly like this:
+- the default agent stays capable but not extravagant;
+- stronger models are used intentionally;
+- background work goes through cron, heartbeat, tasks, or subagents;
+- model fallbacks are visible in config;
+- task state is inspectable.
+
+## Model routing should be explicit
+
+The current config structure separates the model catalog from the selected default model:
 
 ```json
 "agents": {
   "defaults": {
+    "models": {
+      "zai/glm-5.1": { "alias": "GLM" },
+      "zai/glm-5-turbo": {},
+      "openrouter/free": {}
+    },
     "model": {
-      "primary": "anthropic/claude-sonnet-4-5",
-      "fallbacks": [
-        "kimi-coding/k2p5",
-        "synthetic/hf:zai-org/GLM-4.7",
-        "openrouter/google/gemini-3-flash-preview",
-        "openrouter/openai/gpt-5-mini",
-        "openrouter/openai/gpt-5-nano",
-        "openrouter/google/gemini-2.5-flash-lite"
-      ]
+      "primary": "zai/glm-5.1",
+      "fallbacks": ["zai/glm-5-turbo"]
     }
   }
 }
 ```
 
-The exact model list matters less than the intent. Expensive models aren't sitting in the default loop, and fallback behavior is explicit.
+`agents.defaults.models` is the catalog and allowlist. `agents.defaults.model.primary` is what runs first. `fallbacks` is the ordered failover list.
 
----
+The model names above are not the recommendation. Use whatever providers you trust and pay for. The recommendation is the pattern:
 
-## Auto-mode and blind routing
+- use explicit `provider/model` refs;
+- keep the allowlist small enough to understand;
+- avoid leaving premium models in a hot loop;
+- use different providers when fallbacks matter;
+- test after provider or model changes.
 
-I tried auto-mode and blind routing early on. Stopped using both.
+My current example uses Z.ai and OpenRouter because that is what I am testing. Yours should match your accounts, quota limits, and tolerance for latency.
 
-The idea of letting the system decide which model to use sounds great. When I actually ran it, it led to indecision, unexpected cost spikes, and behavior I couldn't reason about when something went wrong.
+## Do not buy hardware first
 
-Being explicit works better. Default routing stays cheap and predictable. Agents get pinned to specific models for specific jobs. When something expensive runs, it's because I asked for it.
+Local models are useful for experimentation and some background work. They are not automatically cheaper once you count hardware, setup time, degraded quality, and debugging.
 
-Less magical. Far more debuggable.
+I would not buy a Mac mini, Mac Studio, or GPU box just for OpenClaw until you know:
 
----
+- which tasks you actually run;
+- what your hosted API cost looks like;
+- which jobs can tolerate weaker models;
+- what failure modes you need to isolate.
 
-## Why strong models shouldn't be defaults
+Use hosted models until you have real usage data. Then decide whether local inference solves an actual problem.
 
-High-quality models like Opus are useful. I use them. They're great at restructuring prompts, designing agents, reasoning through messy problems, and unfucking things that are already broken.
+## Memory is files, not magic
 
-Where I got burned was leaving that level of model running all day.
+OpenClaw remembers things by writing Markdown files in the agent workspace.
 
-It felt powerful until I hit rate limits and ended up locked out waiting for quotas to refresh. At that point you're not building anything. You're just waiting.
+The current memory layout is:
 
-Strong models work best when they're scoped. Pin them to specific agents and call them when you actually need them. Don't leave them in the default coordinator loop burning through your quota on routine work.
+- `MEMORY.md` for durable facts, preferences, and decisions;
+- `memory/YYYY-MM-DD.md` for daily notes and working context;
+- optional `DREAMS.md` for dreaming/review output.
 
----
+Daily memory files are not all injected into every turn. They are available through memory tools and recent startup context. `MEMORY.md` is the compact layer that should stay high signal.
 
-## Don't buy hardware yet
+That does not mean the older memory config knobs disappeared. They are still current:
 
-There's been a lot of hype around buying Mac minis or Mac Studios just to run OpenClaw. I'd strongly recommend against doing this early.
+- `agents.defaults.memorySearch` controls memory search providers, embedding models, QMD, hybrid search, and related indexing behavior.
+- `agents.defaults.memorySearch.sources` and `agents.defaults.memorySearch.experimental.sessionMemory` are still used for opt-in session transcript indexing.
+- `agents.defaults.contextPruning` still supports `mode: "cache-ttl"` for pruning old tool-result context around prompt-cache windows.
+- `agents.defaults.compaction.memoryFlush` still controls the pre-compaction silent memory write, and is enabled by default.
 
-Not everyone has $600 to drop on a tool, and even if you do, it's usually the wrong move to make first. The FOMO around OpenClaw is real. It's easy to feel like you need dedicated hardware immediately.
+The sanitized baseline now includes a memory search example because vector-backed memory is useful once it is configured correctly. The important part is that the embedding provider must work. Setting memory search to an embedding provider without a real key or reachable endpoint will make a copied config worse, not better. If your existing config has working memory search or pruning settings, keep them and compare the settings rather than replacing it blindly.
 
-Learn your workflow first. Learn your costs. Figure out your failure modes. I would have saved money if I had done that before buying anything.
-
----
-
-## The reality of local models
-
-Local models get pitched as the solution to everything. The math rarely works out unless you already have serious hardware.
-
-A Mac Studio with 512 GB of unified memory and 2 TB of storage runs over $9,000. To realistically host something like Kimi 2.5 with usable performance, you're looking at two of them. Roughly $18,000 in hardware.
-
-Unless you're building a business that needs that hardware for more than just OpenClaw, skip it.
-
-Local models are fine for experimentation and simple tasks. But I've found that bending over backwards to save a few cents usually costs more in lost time and degraded performance than just paying for API calls.
-
-One related note: some free-tier hosted options aren't much better. NVIDIA NIM's free tier for Kimi K2.5, for example, regularly has 150+ requests in queue. That kind of latency makes it unusable for agent workflows where you need responses in seconds, not minutes. "Free" doesn't always mean "usable."
-
----
-
-## The hype problem
-
-This part is worth saying.
-
-There is a lot of hype around OpenClaw right now. Flashy demos, YouTube videos promising it will replace everything you do, "this changes everything" energy on every social platform. I've watched people spend more time configuring OpenClaw than doing the work they wanted OpenClaw to help with.
-
-I'd encourage people to resist the FOMO and ignore most of the YouTube content. A lot of it is optimized for clicks, not for the kind of boring Tuesday-afternoon usage that actually matters.
-
-OpenClaw gets useful when you stop expecting magic and start expecting a tool that needs tuning.
-
----
-
-## Cheap models are fine, actually
-
-One of the bigger mental shifts for me was realizing how cheap some models are when used correctly.
-
-Heartbeats run often but do simple checks. No reason to burn premium models on background plumbing. I've seen tens of thousands of heartbeat tokens cost fractions of a cent on cheap models.
-
-For the specific model recommendations and cost math, see [`examples/config-example-guide.md`](examples/config-example-guide.md#heartbeat-model-heartbeatmodel).
-
-Concurrency limits also matter for cost control:
+Example memory tuning using OpenRouter embeddings:
 
 ```json
-"maxConcurrent": 4,
-"subagents": {
-  "maxConcurrent": 8
+"agents": {
+  "defaults": {
+    "memorySearch": {
+      "enabled": true,
+      "provider": "openai",
+      "model": "thenlper/gte-base",
+      "remote": {
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "apiKey": {
+          "source": "env",
+          "provider": "default",
+          "id": "OPENROUTER_API_KEY"
+        }
+      },
+      "sources": ["memory", "sessions"],
+      "experimental": {
+        "sessionMemory": true
+      },
+      "query": {
+        "hybrid": {
+          "enabled": true,
+          "vectorWeight": 0.7,
+          "textWeight": 0.3,
+          "candidateMultiplier": 4,
+          "mmr": {
+            "enabled": true,
+            "lambda": 0.7
+          },
+          "temporalDecay": {
+            "enabled": true,
+            "halfLifeDays": 30
+          }
+        }
+      }
+    },
+    "contextPruning": {
+      "mode": "cache-ttl",
+      "ttl": "6h"
+    },
+    "compaction": {
+      "memoryFlush": {
+        "enabled": true,
+        "softThresholdTokens": 40000,
+        "prompt": "Write durable decisions, state changes, blockers, and user preferences to memory/YYYY-MM-DD.md. Reply NO_REPLY if nothing needs saving.",
+        "systemPrompt": "Pre-compaction memory flush. Save only durable context. Do not summarize routine chatter."
+      }
+    }
+  }
 }
 ```
 
-Those limits prevent one bad task from cascading into retries and runaway cost.
+This uses OpenClaw's OpenAI-compatible embedding adapter with `remote.baseUrl` pointed at OpenRouter. That does not mean the model is an OpenAI model. In `memorySearch`, `provider` selects the embedding adapter. The actual embedding model here is an OpenRouter model. Do not change `provider` to `openrouter` unless current OpenClaw docs show that the OpenRouter plugin registers a memory embedding provider.
 
----
+Replace the model if you need multilingual embeddings or a different provider. Vector search requires a working embedding model; without one, keep memory search lexical or use a provider you already have configured.
 
-## A Practical Rotating Heartbeat Pattern
+The example config enables hooks I want for continuity:
 
-Instead of running separate cron jobs for different periodic checks, I use a single heartbeat that rotates through checks based on how overdue each one is.
+```json
+"hooks": {
+  "internal": {
+    "enabled": true,
+    "entries": {
+      "compaction-notifier": { "enabled": true },
+      "bootstrap-extra-files": { "enabled": true },
+      "boot-md": { "enabled": true },
+      "session-memory": { "enabled": true },
+      "command-logger": { "enabled": true }
+    }
+  }
+}
+```
 
-The idea is simple. Each check has a cadence (how often it should run), an optional time window (when it's allowed to run), and a record of the last time it ran. On each heartbeat tick, the system runs whichever check is most overdue.
+OpenClaw also runs a memory flush before compaction by default. That silent turn gives the agent a chance to save durable notes before older session context is summarized.
 
-This batches background work, keeps costs flat, and avoids the "everything fires at once" problem.
+## Heartbeat is for awareness, not exact scheduling
 
-All heartbeat checks run on a very cheap model. If a check finds something that needs work, it spawns the appropriate agent instead of trying to do it inline.
+Heartbeat runs periodic agent turns. It is useful for inbox checks, calendar awareness, and lightweight monitoring.
 
-For the full implementation pattern and prompt template, see [`examples/heartbeat-example.md`](examples/heartbeat-example.md).
+Current heartbeat behavior matters:
 
----
+- default cadence is usually `30m`;
+- `0m` disables it;
+- heartbeat turns do not create task records;
+- `HEARTBEAT_OK` suppresses no-op replies;
+- `target: "none"` runs without external delivery;
+- `target: "last"` sends to the last contact;
+- `lightContext: true` limits bootstrap context;
+- `isolatedSession: true` avoids sending the whole conversation history;
+- `skipWhenBusy: true` can defer heartbeats when that same agent has active nested work.
 
-## Making memory explicit
+For several checks on different cadences, use a `tasks:` block inside `HEARTBEAT.md` instead of making every check run every tick.
 
-Most memory complaints I see come from assuming memory is automatic. It isn't, and the default behavior is confusing if you don't configure it.
+For exact timing, use cron.
 
-I made memory explicit and cheap. I use cheap embeddings for search (`text-embedding-3-small`), prune context based on cache TTL (6 hours), and set up compaction to automatically flush sessions to daily memory files when they hit 40k tokens.
+## Cron and tasks are native now
 
-This one change eliminated most of the "why did it forget that" moments I was having. Before I set this up, I was losing context constantly and blaming the model when it was really a configuration problem.
+Older versions made it tempting to wire your own task visibility through Todoist or a similar tool. You can still do that if you like the interface, but OpenClaw now has native task records.
 
-For the specific config settings and explanations, see [`examples/config-example-guide.md`](examples/config-example-guide.md).
+Use the current split:
 
----
+- cron for exact schedules and one-shot reminders;
+- heartbeat for approximate periodic awareness;
+- background tasks for detached work records;
+- Task Flow for multi-step flows;
+- inferred commitments for short-lived follow-ups;
+- standing orders for durable operating authority.
 
-## A note on sharing my config
+All cron executions create background task records. Subagents and ACP runs do too. Normal chat and heartbeat runs do not.
 
-A few people asked to see a sanitized version of my OpenClaw config. I'm sharing it here as a reference, not something to copy verbatim.
+Useful commands:
 
-It reflects my usage patterns, my constraints, and my tolerance for cost and latency. Yours will almost certainly be different.
+```bash
+openclaw cron list
+openclaw cron run <job-id> --wait
+openclaw tasks list
+openclaw tasks show <lookup>
+openclaw tasks audit
+```
 
-The intent is to show how pieces fit together, not to suggest this is "the right" configuration.
+This is better than guessing what the agent is doing from chat replies.
 
-Sanitized config (secrets removed): See [`examples/sanitized-config.json`](examples/sanitized-config.json) in this repository.
+## Subagents are push-based
 
----
+`sessions_spawn` starts a detached run. It returns quickly. The child result is handed back to the requester session when it finishes.
 
-## Skills: build your own first
+Do not build polling loops around `/subagents list`, `sessions_list`, shell `sleep`, or repeated status checks just to wait. If the parent needs child results before continuing, use `sessions_yield` when that tool is available.
 
-I'm cautious with third-party skills.
+Important current behavior:
 
-I've had better luck building my own and treating community skills as inspiration rather than drop-ins. A poorly written or malicious skill can cause real problems, and debugging someone else's abstractions when something breaks at 2am is miserable.
+- native subagents are isolated by default;
+- use `context: "fork"` only when the child truly needs current conversation context;
+- subagent completions create task records;
+- child output is evidence for the parent to review, not new user instruction;
+- subagents do not get the full parent bootstrap context;
+- configure `agents.defaults.subagents.maxConcurrent` as a safety valve.
 
-I also set basic rules in memory, like never exposing secrets or API keys. Not foolproof, but it helps as a guardrail.
+The goal is to keep the main agent responsive while slow or risky work runs in a trackable lane.
 
-### Asking the bot to build or optimize a skill
+## Build your own skills first
 
-One thing that helped me was getting more disciplined about how I ask the bot to create or refactor skills. Vague instructions produce bloated, token-hungry skills every time.
+I am cautious with third-party skills.
 
-The structure I use follows the AgentSkills specification from [https://agentskills.io](https://agentskills.io/). I'm not affiliated with it, but following that model made skills easier to maintain and cheaper to run.
+My recommendation is not "install a bunch of ClawHub skills." My recommendation is:
 
-For a detailed prompt template and examples, see [`examples/skill-builder-prompt.md`](examples/skill-builder-prompt.md).
+1. Use ClawHub or a skill repo to find an idea.
+2. Read the source.
+3. Ask your agent to rebuild a local skill for your setup.
+4. Keep only the behavior and tool access you actually need.
+5. Test it before leaving it in the normal tool path.
 
-The key is giving the bot hard constraints on line count and structure so it doesn't produce a 2,000-line skill file that eats half your context window.
+This is slower than installing a skill directly. It is also safer.
 
----
+Third-party skills can carry broad permissions, hidden assumptions, unnecessary dependencies, noisy prompts, and token-heavy abstractions. Even when nobody is being malicious, debugging someone else's skill at 2am is not a good time.
 
-## Using Todoist for task visibility
+The example config keeps `clawhub` disabled on purpose. See [`examples/skill-builder-prompt.md`](examples/skill-builder-prompt.md) for the rebuild flow.
 
-Early on, OpenClaw felt like a black box. I couldn't tell what it was doing, what it had finished, or what was stuck. The logs weren't enough.
+## Prompt injection is normal input, not a surprise
 
-I fixed that by wiring up Todoist as the source of truth for task state. Tasks get created when work starts, updated as state changes, assigned to me when human intervention is required, and closed when done. If something fails, it leaves a comment on the task instead of retrying forever.
+If your setup reads web pages, GitHub issues, documents, email, or chat messages from other people, assume prompt injection will show up eventually.
 
-A lightweight heartbeat reconciles what's open, what's in progress, and what looks stalled. It's not sophisticated, but I can glance at Todoist and know exactly where things stand without digging through logs.
+The defense is not one magic sentence. Use layers:
 
-For a prompt template to build your own task tracking system, see [`examples/task-tracking-prompt.md`](examples/task-tracking-prompt.md).
+- restrict who can talk to the bot;
+- restrict which tools each channel and agent can use;
+- use sandboxing where it fits;
+- keep filesystem access narrow;
+- use stronger models for tool-enabled work;
+- treat untrusted content as data, not instruction;
+- audit config after changes.
 
----
+Run:
 
-## Running on a VPS
+```bash
+openclaw security audit
+openclaw security audit --deep
+openclaw doctor --fix
+```
 
-If you want to run OpenClaw on a VPS, you don't need a large machine. A Hetzner CX23 is plenty.
+OpenClaw's security docs are written around a personal-assistant trust model. Do not treat one shared Gateway as a hostile multi-tenant boundary.
 
-I'd strongly recommend Tailscale on both your local machine and the VPS. Install it on the VPS with the `--ssh=true` flag and you can log in over Tailscale directly. Then block port 22 entirely in the Hetzner firewall.
+## VPS setup
 
-I block all inbound traffic and access everything over Tailscale. Simple setup, and one less thing to worry about.
+If you run OpenClaw on a VPS, my recommendation is still Tailscale-first.
 
-For the full VPS setup process, security hardening, and validation workflow, see [`examples/vps-setup.md`](examples/vps-setup.md).
+The setup I want:
 
----
+- small VPS is fine;
+- install Tailscale on the VPS and local machines;
+- verify SSH over Tailscale;
+- block public SSH after verifying the Tailnet path;
+- keep the Gateway loopback-bound;
+- use Tailscale Serve for dashboard/control access;
+- use Telegram or another channel for remote chat.
 
-## Prompt Injection Defense
+If you do not want Tailscale, do not compensate by opening random ports. Keep the Gateway local and use a messaging channel as the remote interface.
 
-If your OpenClaw setup can read untrusted content (web pages, GitHub issues, documents, email), assume someone will eventually try to steer it.
+See [`examples/vps-setup.md`](examples/vps-setup.md) for the longer checklist.
 
-I make expectations explicit and load them every session. The exact rules I keep in my `AGENTS.md`, attack patterns to watch for, and security configuration are documented in [`examples/security-patterns.md`](examples/security-patterns.md).
+## What this costs me
 
-Not foolproof, but it helps set clear boundaries.
+Costs change, model availability changes, and providers change pricing.
 
----
+The useful takeaway is not my exact bill. The useful takeaway is that costs flatten out when you:
 
-## What this costs me per month
+- keep background work on cheaper models;
+- cap concurrency;
+- avoid retry storms;
+- use exact schedules only when needed;
+- do not route every routine turn through premium models;
+- monitor provider dashboards.
 
-I don't pay for everything through APIs.
+Treat every model and provider claim in this repo as a dated personal note unless it is backed by current OpenClaw docs or provider docs.
 
-I use two coding subscriptions at about $20 each. On top of that, API usage runs about $5-$10 per month split between OpenRouter and OpenAI.
+## Get stable before 24/7
 
-Most months I land around $45-$50 total.
+Do not start by making everything always-on.
 
----
+Get a local or Tailscale-only setup working first. Watch logs, costs, task records, and channel behavior for a few days. Then add cron, heartbeat, and broader tools one piece at a time.
 
-## Your numbers will be different
+Letting an agent run unattended before you understand its failure modes is how you wake up to a bill, a noisy chat history, and no clear explanation of what happened.
 
-If you let agents run nonstop, allow unlimited retries, or route everything through premium models, costs will climb. I've seen people hit $200+ in a weekend by leaving things uncapped.
+## Config reference
 
-If you scope models, cap concurrency, and keep background work on cheap models, costs flatten out fast.
+The sanitized config in this repo is based on a working setup:
 
----
+- [`examples/sanitized-config.json`](examples/sanitized-config.json)
+- [`examples/config-example-guide.md`](examples/config-example-guide.md)
 
-## On Anthropic bans
-
-**Important update:** Anthropic has officially stated that using their **subscription plans** for OpenClaw or any use outside their ecosystem carries a very high risk of account bans. This does not apply to API usage—you can use the Anthropic API directly without the same ban risk.
-
-The distinction matters: subscription plans (like Claude Pro) are intended for individual use within Anthropic's ecosystem. Using them for automation via OpenClaw violates their terms. API keys are designed for programmatic use.
-
-My recommendation: do not use Anthropic **subscription plans** for OpenClaw. If you want Claude models, use the API directly or route through OpenRouter.
-
-I have updated my own setup to avoid direct Anthropic subscriptions for OpenClaw usage. The fallback chain in my config reflects this.
-
----
-
-## Get things stable before going 24/7
-
-I don't start with always-on mode.
-
-I get things stable first, usually in a local VM or container. I watch behavior and cost for a few days. Only after things are predictable do I let it run unattended for longer stretches.
-
-Letting an agent run unsupervised before you understand its failure modes is how you wake up to a $300 API bill and a Todoist full of gibberish.
-
----
-
-## Final thoughts
-
-You don't need expensive hardware or expensive subscriptions to make OpenClaw useful. What you need is to be deliberate about configuration, keep visibility into what's happening, and resist the urge to over-engineer before you understand the basics.
-
-If this saves you some time or frustration, it did its job.
-
----
+It is a reference, not a template to copy without thought. The provider list, model list, channels, and skill entries should be changed for your environment.
 
 ## Links and referrals
 
-A few people asked where I'm getting access to some of the models and services mentioned above.
+Some older versions of this guide included provider notes and referral links. Keep those separate from technical guidance.
 
-For transparency: I'm not affiliated with OpenClaw, and nothing in this article depends on using these links.
-
-Some providers I use offer referral programs. Included here for people who ask. Use them or don't.
-
-### Z.ai (GLM models)
-
-Z.ai provides access to GLM 4.6 and 4.7, which I use as capable, lower-cost options for agents that don't need premium models.
-
-- Direct link: [https://z.ai/subscribe](https://z.ai/subscribe)
-- Referral link (supports this guide): [https://z.ai/subscribe?ic=6PVT1IFEZT](https://z.ai/subscribe?ic=6PVT1IFEZT)
-
-### Synthetic
-
-Synthetic hosts several open-source and partner models under one subscription, including GLM 4.7 and Kimi 2.5, plus additional models via Fireworks and Together.
-
-- Direct link: [https://synthetic.new](https://synthetic.new)
-- Referral link (supports this guide): [https://synthetic.new/?referral=p7ZFKQRrWliKZGa](https://synthetic.new/?referral=p7ZFKQRrWliKZGa)
-
-Use whichever links you prefer. Referrals help support this guide but aren't required.
+For current provider setup, use the official OpenClaw provider docs and the provider's own pricing/auth docs. If a provider note remains in this repo, read it as personal context, not a recommendation.
