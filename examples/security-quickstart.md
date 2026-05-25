@@ -1,202 +1,146 @@
 # OpenClaw Security Quick Start
 
-New to OpenClaw security? Start here. These prompts help you implement basic security step by step.
+Start here if you want a practical security pass before leaving OpenClaw running unattended.
 
-For complete configuration reference, see [security-hardening.md](security-hardening.md).
+For the longer reference, see [security-hardening.md](security-hardening.md).
 
----
+## Before You Change Anything
 
-## Before You Start
+Back up the current config:
 
-**Back up first:**
 ```bash
 tar -czf ~/openclaw-backup-$(date +%Y%m%d).tar.gz ~/.openclaw/
 ```
 
-**Test changes carefully.** Security hardening can restrict agent functionality.
+Then inspect before editing:
 
----
-
-## Prompt 1: Security Audit
-
-Audit your current OpenClaw security:
-
-```
-Check my OpenClaw deployment at ~/.openclaw/ for security issues:
-
-1. In openclaw.json, check:
-   - Are API keys hardcoded or using env vars (${VAR})?
-   - Which tools are allowed? List dangerous ones (exec, cron, gateway)
-   - Is logging.redactSensitive enabled?
-   - Is gateway.bind set to loopback?
-
-2. Check file permissions on ~/.openclaw/ and openclaw.json
-
-Report as:
-- CRITICAL: Fix immediately  
-- HIGH: Fix today
-- MEDIUM: Fix this week
+```bash
+openclaw doctor
+openclaw gateway status
+openclaw config get gateway
+openclaw config get tools
+openclaw config get channels
 ```
 
----
+Do not paste secrets into prompts. Use OpenClaw auth profiles and the built-in secret flow for provider API keys.
 
-## Prompt 2: Basic Hardening
+## Prompt 1: Audit
 
-Implement core security controls:
+```text
+Audit my OpenClaw setup at ~/.openclaw.
 
-```
-Update ~/.openclaw/openclaw.json with these security controls:
+Check:
+1. gateway.bind, gateway.mode, gateway.auth, gateway.tailscale, and gateway.controlUi.
+2. Whether the dashboard is reachable only through loopback or Tailscale.
+3. Whether provider keys are managed through auth.profiles and secret storage instead of hardcoded config values.
+4. Which plugins, channels, and tool profiles are enabled.
+5. Whether ClawHub skills are disabled or review-only.
+6. File permissions on ~/.openclaw and ~/.openclaw/openclaw.json.
 
-1. Add environment variables section:
-{
-  "env": {
-    "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
-    "OPENAI_API_KEY": "${OPENAI_API_KEY}",
-    "GATEWAY_TOKEN": "${GATEWAY_TOKEN}"
-  }
-}
+Report:
+- CRITICAL: public exposure, hardcoded secrets, unsafe channel allowlists
+- HIGH: broad tools on unattended agents, weak Telegram allowlists
+- MEDIUM: cleanup, logging, and documentation issues
 
-2. Set default tool policies:
-{
-  "agents": {
-    "defaults": {
-      "tools": {
-        "allow": ["read", "write", "edit", "web_search"],
-        "deny": ["exec", "cron", "gateway", "nodes"]
-      }
-    }
-  }
-}
-
-3. Enable logging redaction:
-{
-  "logging": {
-    "redactSensitive": "tools"
-  }
-}
-
-4. Secure gateway:
-{
-  "gateway": {
-    "bind": "loopback",
-    "auth": {
-      "mode": "token", 
-      "token": "${GATEWAY_TOKEN}"
-    }
-  }
-}
-
-Show the complete updated config.
+Do not change files yet.
 ```
 
----
+## Prompt 2: Tailscale-First Gateway
 
-## Prompt 3: Cost Protection
+Use this when you can use Tailscale:
 
-Prevent surprise bills:
+```text
+Update my OpenClaw gateway config for a Tailscale-first setup.
 
-```
-Add cost protection to my OpenClaw config:
+Target behavior:
+- gateway.mode is local
+- gateway.bind is loopback
+- gateway.auth.mode is token
+- gateway.tailscale.mode is serve
+- gateway.tailscale.resetOnExit is true
+- gateway.controlUi.allowedOrigins contains only my Tailscale Control UI origin
+- gateway.controlUi.allowInsecureAuth may remain true only because access is restricted to my Tailscale network
 
-1. Track model costs:
-{
-  "models": {
-    "providers": {
-      "anthropic": {
-        "models": [
-          {
-            "id": "claude-opus-4-6",
-            "cost": { "input": 5.0, "output": 25.0 }
-          },
-          {
-            "id": "claude-sonnet-4-5", 
-            "cost": { "input": 3.0, "output": 15.0 }
-          }
-        ]
-      }
-    }
-  }
-}
-
-2. Create agents with appropriate models:
-   - "monitor" agent: use gpt-5-nano only
-   - "researcher" agent: use kimi/k2p5 or sonnet
-   - No agent should default to Opus
-
-3. Ensure Opus cannot be used by cron jobs or public-facing agents
-
-Show which agents get which models.
+Preserve all working ports, tokens, channel settings, auth profiles, model providers, plugins, and hooks.
+Show the diff before applying.
 ```
 
-**Important:** Also set hard limits in your Anthropic/OpenAI dashboards. Config tracking alone won't stop bills.
+If you do not want Tailscale, keep the Gateway local and use a messaging channel such as Telegram for remote access. Do not expose the Control UI directly to the public internet.
 
----
+## Prompt 3: Provider Secrets
 
-## Prompt 4: Backup Setup
+```text
+Review my provider authentication.
 
-Create automated backups:
+Goal:
+- keep auth.profiles.<provider>.mode as api_key where appropriate
+- avoid hardcoded API keys in openclaw.json
+- confirm the configured model IDs match agents.defaults.models
+- confirm agents.defaults.model.primary and fallbacks point to existing catalog entries
 
-```
-Create a backup script at ~/.openclaw/scripts/backup.sh:
-
-Requirements:
-1. Backup location: ~/backups/openclaw/YYYY-MM-DD/
-2. Include:
-   - openclaw.json
-   - workspace/*.md (AGENTS.md, SOUL.md, etc)
-   - memory/*.md (last 30 days)
-3. Encrypt with gpg
-4. Make executable
-5. Set up cron for daily 2 AM runs
-
-Provide the complete script and cron line.
+Use my current provider choices. Do not replace them with OpenAI, Anthropic, or any other provider unless I ask.
 ```
 
----
+## Prompt 4: Channel Allowlist
 
-## What Each Prompt Does
+```text
+Review my Telegram and BlueBubbles channel config.
 
-| Prompt | Time | Risk |
-|--------|------|------|
-| Audit | 5 min | None |
-| Hardening | 15 min | May limit agent capabilities |
-| Cost Control | 10 min | May block expensive requests |
-| Backup | 10 min | None |
+For Telegram:
+- require an allowlist for DMs
+- keep group requireMention enabled unless I explicitly opt out
+- verify groupAllowFrom is narrow
+- avoid link previews unless I ask for them
 
----
+For BlueBubbles:
+- verify the webhook path is not public without the expected auth boundary
+- confirm the server URL and password are not printed in logs
 
-## Next Steps
+Do not change working channel behavior unless a setting is clearly unsafe.
+```
 
-After these prompts:
+## Prompt 5: Skills
 
-1. **Review changes** - Make sure you understand what was modified
-2. **Test agents** - Verify they still work as expected  
-3. **Read the full guide** - See [security-hardening.md](security-hardening.md) for:
-   - Detailed tool policy examples
-   - Rate limiting
-   - Prompt injection defense
-   - Emergency procedures
+```text
+Review my OpenClaw skills setup.
 
----
+Policy:
+- leave clawhub disabled by default
+- do not install third-party skills directly from ClawHub
+- if a ClawHub skill looks useful, inspect the source and write a local skill from scratch
+- keep local skills narrow, auditable, and explicit about required tools
 
-## Troubleshooting
+Report which skills are enabled, which are disabled, and which local skills should be rebuilt or removed.
+```
 
-**Agents stopped working:**
-- Check tool policies - you may have blocked a needed tool
-- Review the "deny" list in agents.defaults.tools
+## Prompt 6: Cost Guardrails
 
-**Can't access gateway:**
-- `bind: loopback` means local access only
-- This is correct for local deployments
+```text
+Review model and cost risk in my OpenClaw config.
 
-**Costs still high:**
-- Dashboard limits at providers matter more than config
-- Set hard limits in Anthropic/OpenAI dashboards
+Check:
+- agents.defaults.models catalog entries
+- agents.defaults.model.primary and fallbacks
+- cron and heartbeat jobs that may run unattended
+- expensive models assigned to monitoring or routine tasks
+- provider dashboard limits that I still need to set outside OpenClaw
 
----
+Keep the guidance provider-agnostic. My model list is illustrative and may use Z.ai, OpenRouter, or another provider.
+```
+
+## Common Fixes
+
+| Finding | Fix |
+| --- | --- |
+| Gateway binds to `0.0.0.0` | Change to loopback and access through Tailscale |
+| Hardcoded API key in JSON | Move to provider auth profile and secret store |
+| Telegram accepts anyone | Use DM allowlist and group sender allowlist |
+| ClawHub enabled by default | Disable it; use source as inspiration only |
+| Cron uses a premium model for checks | Assign a cheaper explicit model |
+| Dashboard exposed by reverse proxy | Remove public exposure; use Tailscale or local-only |
 
 ## References
 
-- [security-hardening.md](security-hardening.md) - Complete security reference
-- OpenClaw Docs: https://docs.openclaw.ai/gateway/security
-- OWASP LLM Top 10: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+- [security-hardening.md](security-hardening.md)
+- [vps-setup.md](vps-setup.md)
+- [config-example-guide.md](config-example-guide.md)
