@@ -1,6 +1,11 @@
 # Autonomous Operation Pattern
 
 **Enable OpenClaw to run autonomously for extended periods with self-healing capabilities.**
+**Ownership note:** Community-contributed showcase. Preserve the source context and avoid rewriting it as the runbook author's personal setup.
+
+## Current-Version Note
+
+This pattern predates the latest OpenClaw task, heartbeat, and cron documentation. Use it as an operational idea, then verify the commands and scheduling approach against the current docs before deploying it unattended.
 
 ## The Problem
 

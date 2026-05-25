@@ -2,6 +2,7 @@
 
 **Source:** https://github.com/gluk-w/claworc
 **Date:** 2026-03-01
+**Ownership note:** Community-contributed showcase. Preserve the source attribution and do not rewrite this as the runbook author's personal setup.
 
 ## What It Does
 
@@ -40,7 +41,7 @@ Browser → Control Plane → [SSH tunnel] → Agent Container
 - IT support bot
 - Isolated sensitive operations
 
-## Relevance to My Setup
+## Potential Runbook Fit
 
 - Could use for better security isolation
 - Future: multi-user access
@@ -53,6 +54,8 @@ Browser → Control Plane → [SSH tunnel] → Agent Container
 ---
 
 ## Setup Steps
+
+Before using these commands, compare them with the current Claworc repository. This showcase is a starting point, not a guarantee that the upstream project still uses the exact same config.
 
 ### Prerequisites
 
@@ -85,9 +88,9 @@ instances:
     port: 18789
     ssh_port: 2222
     vnc_port: 3000
-  
+
   - name: analysis
-    container: openclaw-analysis  
+    container: openclaw-analysis
     port: 18790
     ssh_port: 2223
     vnc_port: 3001
@@ -151,4 +154,3 @@ docker-compose down -v
 cd ..
 rm -rf claworc
 ```
-

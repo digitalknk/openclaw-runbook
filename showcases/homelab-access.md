@@ -1,237 +1,132 @@
 # Homelab Access
 
-**Category:** Infrastructure  
-**Example Model:** Balanced tier (Sonnet, Gemini Flash, etc.)  
-**Updated:** 2026-02-09
+**Category:** Infrastructure
+**Example Model:** balanced
+**Updated:** 2026-05-25
 
-> **HOW TO USE:** Copy the Telegram bot setup and safety rules below. This lets you run SSH commands on homelab devices via Telegram with confirmation prompts for dangerous operations.
+Remote homelab control should not require public SSH or a public OpenClaw dashboard. Use Tailscale for network access and a locked-down messaging channel for prompts.
 
 ## Quick Start
 
-### 1. Prerequisites
+### Prerequisites
 
-- [ ] Tailscale (or WireGuard, ZeroTier) installed on all devices
-- [ ] SSH keys configured and authorized on devices
-- [ ] Telegram bot created via @BotFather
-- [ ] SSH access working manually first
+- [ ] Tailscale installed on the OpenClaw host and homelab devices.
+- [ ] SSH key auth working manually.
+- [ ] Telegram or another channel configured with allowlists.
+- [ ] Confirmation rules for destructive commands.
 
-### 2. Set Up Tailscale
+### Tailscale And SSH
 
-On each homelab device:
+On each device:
+
 ```bash
-# Install
-curl -fsSL https://tailscale.com/install.sh | sh
-
-# Authenticate
 tailscale up
-
-# Get Tailscale IP
 tailscale ip -4
-# Note this IP for SSH config
 ```
 
-### 3. Configure SSH
+Add SSH hosts:
 
-Add to `~/.ssh/config`:
-```
-Host homelab-router
-    HostName [TAILSCALE_IP]  # e.g., 100.x.x.x
-    User [USERNAME]
-    IdentityFile ~/.ssh/homelab_key
-    StrictHostKeyChecking accept-new
-
+```sshconfig
 Host homelab-nas
     HostName [TAILSCALE_IP]
     User [USERNAME]
     IdentityFile ~/.ssh/homelab_key
+    StrictHostKeyChecking accept-new
 ```
 
-Test manually:
+Test outside OpenClaw:
+
 ```bash
-ssh homelab-router uptime
+ssh homelab-nas uptime
 ```
 
-### 4. Create Telegram Bot
+### Channel Rules
 
-1. Message @BotFather on Telegram
-2. Send `/newbot`
-3. Name your bot (e.g., "MyHomelabBot")
-4. Save the API token
-5. Get your chat ID from @userinfobot
+Add a role section to `AGENTS.md` or a local skill:
 
-Add to `~/.openclaw/credentials/`:
-```
-TELEGRAM_BOT_TOKEN=[YOUR_BOT_TOKEN]
-TELEGRAM_CHAT_ID=[YOUR_CHAT_ID]
-```
+```markdown
+## Homelab Access Rules
 
-### 5. Copy This Agent Config
+Accept homelab commands only from allowlisted users.
 
-Add to your gateway config:
+Allowed without confirmation:
+- uptime
+- df -h
+- free -m
+- systemctl status [service]
+- journalctl -u [service] -n 100
+- ping and curl -I
 
-```yaml
-agents:
-  homelab:
-    model: anthropic/claude-sonnet-4-5
-    tools:
-      - message
-      - exec
-    system: |
-      You are a homelab access controller. Handle SSH commands from Telegram.
+Requires explicit confirmation:
+- systemctl restart
+- package installs or upgrades
+- config file edits
+- reboot or shutdown
 
-      VALIDATION RULES:
-      1. Verify sender is authorized ([YOUR_TELEGRAM_USERNAME])
-      2. Parse command from message
-      3. Check command against allowlist
+Always reject:
+- rm -rf
+- disk wiping commands
+- password or user management
+- firewall changes unless the user gives exact context
+- commands that bypass Tailscale or open public ports
 
-      ALLOWLIST (no confirmation):
-      - Status: uptime, df -h, free -m, systemctl status [service]
-      - Network: ping, curl -I, ip addr
-      - Info: ls, cat (read-only files)
-
-      REQUIRES CONFIRMATION (ask "Execute? Reply YES"):
-      - Service restart: systemctl restart
-      - Package install: apt install, pip install
-      - File changes: sed, echo >, editing configs
-      - Reboot: reboot, shutdown
-
-      FORBIDDEN (always reject):
-      - rm -rf, dd, disk wiping
-      - Password changes, user management
-      - Firewall changes without explicit context
-
-      EXECUTION:
-      - SSH via Tailscale: ssh [host] [command]
-      - Timeout: 30 seconds
-      - Return output to Telegram
+Run commands through SSH over Tailscale.
+Return command, host, exit status, and output summary.
 ```
 
-### 6. Test It
+## Test Prompts
 
-Send to your Telegram bot:
-```
-/homelab status router
-```
-
-Should return uptime info.
-
----
-
-## What This Does
-
-**Problem:** Need remote access to homelab devices. Port forwarding is risky, VPN apps are clunky, native apps are inconsistent.
-
-**Solution:** Telegram bot + Tailscale + SSH. You send commands via Telegram bot. Safe commands execute immediately. Dangerous commands require "YES" confirmation. All over Tailscale (encrypted, no port forwarding).
-
-## Security Model
-
-### Three-Tier Command System
-
-**Tier 1 - Allow (immediate execution):**
-```bash
-uptime                    # OK
-df -h                     # OK
-free -m                   # OK
-systemctl status pihole   # OK
-ping google.com           # OK
-ls /etc/nginx             # OK
-cat /etc/hosts            # OK
+```text
+Check uptime and disk usage on homelab-nas.
 ```
 
-**Tier 2 - Confirm (ask first):**
-```bash
-systemctl restart pihole  # "Confirm: restart pihole? Reply YES"
-apt install htop          # "Confirm: install htop? Reply YES"
-echo "config" > file     # "Confirm: write to file? Reply YES"
-reboot                    # "Confirm: reboot? Reply YES"
+```text
+Restart pihole on homelab-nas. Ask for confirmation first.
 ```
 
-**Tier 3 - Forbidden (always reject):**
-```bash
-rm -rf /                  # REJECTED
-dd if=/dev/zero           # REJECTED
-passwd                    # REJECTED
-iptables -F               # REJECTED
-```
+## Telegram Config Example
 
-## Command Examples
-
-**Check status:**
+```json
+{
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "groups": {
+        "*": {
+          "requireMention": true
+        }
+      },
+      "botToken": "<TELEGRAM_BOT_TOKEN>",
+      "dmPolicy": "allowlist",
+      "allowFrom": ["<YOUR_TELEGRAM_USER_ID>"],
+      "groupAllowFrom": ["<YOUR_GROUP_ID>"],
+      "linkPreview": false
+    }
+  }
+}
 ```
-You: /homelab status router
-Bot: uptime: 45 days, load: 0.12, disk: 67%
-```
-
-**Check service:**
-```
-You: /homelab systemctl status pihole on nas
-Bot: pihole.service - Pi-hole DNS
-     Active: active (running) since Mon 2026-02-10
-```
-
-**Restart with confirmation:**
-```
-You: /homelab restart pihole on nas
-Bot: Confirm: systemctl restart pihole on homelab-nas?
-      Reply YES to execute.
-You: YES
-Bot: Executing... Done. Pi-hole restarted.
-```
-
-## Advanced: Multi-User Support
-
-Allow multiple authorized users:
-```yaml
-system: |
-  Authorized users: [USER1], [USER2]
-  
-  For destructive commands (Tier 2):
-  - User1 can approve their own commands
-  - OR require approval from User2 (two-person rule)
-```
-
-## Troubleshooting
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| "Permission denied" | SSH key issue | Verify key is in `~/.ssh/authorized_keys` on device |
-| "Host not found" | Tailscale not connected | Run `tailscale up` on device |
-| No response | Bot not receiving messages | Check webhook/polling setup |
-| Command timeout | Long-running command | Increase timeout or run in background |
 
 ## Security Checklist
 
-- [ ] Tailscale ACLs restrict which devices can talk
-- [ ] SSH key-based auth only (no passwords)
-- [ ] Separate SSH keys for homelab (not personal keys)
-- [ ] Confirmation required for destructive commands
-- [ ] All commands logged to audit file
-- [ ] Rate limiting (max 10 commands/hour)
+- [ ] No public SSH port.
+- [ ] No public OpenClaw dashboard.
+- [ ] SSH keys are dedicated to homelab access.
+- [ ] Telegram DMs and groups are allowlisted.
+- [ ] Destructive commands require confirmation.
+- [ ] Commands are logged.
+- [ ] Tailscale ACLs restrict device access where possible.
 
-## Variations
+## Troubleshooting
 
-**Discord instead of Telegram:**
-```yaml
-system: |
-  Accept commands from Discord user [DISCORD_USER_ID]
-  ...same rules...
-```
-
-**Slack integration:**
-Use Slack bot with incoming webhooks.
-
-**Voice commands:**
-Add speech-to-text layer: "Hey Assistant, restart the NAS"
-
-**Web dashboard:**
-Simple web UI for common commands with big buttons.
+| Problem | Fix |
+| --- | --- |
+| SSH works locally but not from OpenClaw | Check the OpenClaw process user and key path |
+| Host not found | Use Tailscale IP or MagicDNS name |
+| Bot accepts the wrong user | Fix `allowFrom` and `groupAllowFrom` |
+| Agent runs too broad a command | Move the allowlist into a local skill and narrow the prompt |
+| Commands hang | Add timeouts and avoid interactive commands |
 
 ## Related
 
-- [daily-brief](daily-brief.md) - Can include homelab status
-- [tech-discoveries](tech-discoveries.md) - Find new homelab tools
-
-## Changelog
-
-- **2026-02-09** - Initial version, Telegram-based
-- **2026-02-10** - Added confirmation workflow, generalized
+- [security hardening](../examples/security-hardening.md)
+- [vps setup](../examples/vps-setup.md)

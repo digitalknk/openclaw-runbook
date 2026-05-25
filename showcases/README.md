@@ -1,153 +1,92 @@
 # OpenClaw Showcases
 
-Real-world automation patterns you can copy, paste, and customize. Each showcase is designed to be immediately usable with minimal edits.
+These are operational patterns you can adapt. They are not magic templates. Replace the placeholders, test manually, and keep remote access inside your chosen boundary.
 
-## How to Use These
+Some showcases are community contributions or reviews of external projects. Preserve source attribution when editing those files, and do not rewrite them as if they were the runbook author's personal setup.
 
-Each showcase follows the same format:
+## How To Use These
 
-1. **Quick Start** - Copy-paste ready cron job and prompt
-2. **Replace `[PLACEHOLDERS]`** - Fill in your specific values
-3. **Test** - Run manually with `openclaw cron run [job-name]`
-4. **Deploy** - Let it run automatically
+1. Read the prerequisites.
+2. Replace every `[PLACEHOLDER]`.
+3. Add the cron job with `openclaw cron add` or your current config workflow.
+4. Test with `openclaw cron run <job-id> --wait`.
+5. Watch the first automatic run before trusting it.
 
-> **Time to first automation:** 5-10 minutes per showcase
+## Showcases
 
-## Showcases by Category
+| Showcase | Use Case | Model Guidance |
+| --- | --- | --- |
+| [daily-brief](daily-brief.md) | Morning weather, calendar, task summary | balanced or cheap |
+| [idea-pipeline](idea-pipeline.md) | Overnight research on captured ideas | research-capable |
+| [tech-discoveries](tech-discoveries.md) | Weekly curated tech links | balanced |
+| [linkedin-drafter](linkedin-drafter.md) | Draft posts for review | stronger writing model |
+| [homelab-access](homelab-access.md) | Tailscale SSH via Telegram with confirmations | balanced |
+| [agent-orchestrator](agent-orchestrator.md) | Route coding tasks to specialist tools | strong reasoning |
+| [coeus-knowledge-base](coeus-knowledge-base.md) | Local semantic knowledge base | local or balanced setup model |
+| [autonomous-operation](autonomous-operation.md) | Community-contributed autonomous health-check pattern | cheap monitor, verify current docs |
+| [claworc](claworc.md) | Community-contributed review of an external OpenClaw control-plane project | n/a |
 
-### Daily Automation
-Stay organized without manual effort.
+## Model Guidance
 
-| Showcase | What It Does | Example Model |
-|----------|--------------|---------------|
-| [daily-brief](daily-brief.md) | Morning summary (weather, calendar, tasks) | Balanced tier |
-| [idea-pipeline](idea-pipeline.md) | Overnight research on your ideas | Research tier |
-| [coeus-knowledge-base](coeus-knowledge-base.md) | Self-hosted knowledge capture with semantic search | Any (local CPU) |
+The showcases use tiers instead of prescribing providers.
 
-### Content & Research
-Automate research and content creation.
+| Tier | Use For |
+| --- | --- |
+| cheap | status checks, heartbeat jobs, formatting, low-risk summaries |
+| balanced | daily briefs, normal research, task cleanup |
+| strong | public writing, complex planning, multi-step code routing |
+| local | privacy-sensitive tasks, cheap background processing, offline workflows |
 
-| Showcase | What It Does | Example Model |
-|----------|--------------|---------------|
-| [linkedin-drafter](linkedin-drafter.md) | Weekly post drafts in your voice | Premium tier |
-| [tech-discoveries](tech-discoveries.md) | Curated tech news weekly | Balanced tier |
-
-### Infrastructure & Operations
-Manage systems and access safely.
-
-| Showcase | What It Does | Example Model |
-|----------|--------------|---------------|
-| [homelab-access](homelab-access.md) | Safe SSH via Telegram with confirmations | Balanced tier |
-
-### Development & Coding
-Agents that help with code and technical tasks.
-
-| Showcase | What It Does | Example Model |
-|----------|--------------|---------------|
-| [agent-orchestrator](agent-orchestrator.md) | Route tasks to optimal CLI tools | Premium tier |
-
-## Model Tier Reference
-
-The showcases reference model tiers as **examples**. Use whatever models you have configured:
-
-| Tier | Example Models | Best For | Cost |
-|------|----------------|----------|------|
-| **Premium** | Opus, GPT-4/5, Gemini Pro | Complex reasoning, creative tasks | Higher |
-| **Upper Balanced** | Kimi, Gemini Pro | Good reasoning, fast | Medium |
-| **Balanced** | Sonnet, GLM, Gemini Flash | General tasks | Low |
-| **Cheap** | Haiku, Flash-Lite, Nano | Simple tasks, high volume | Minimal |
-
-**Note:** Your models may have different names. The showcases work with any model - adjust based on your setup and budget.
-
-## Quick Start Template
-
-Don't see what you need? Copy this template and build your own:
-
-> **[template.md](template.md)** - Start here for your own showcases
-
-The template includes:
-- Copy-paste ready cron job structure
-- Prompt template with placeholders
-- Troubleshooting guide
-- Cost estimation framework
-
-## Submitting Your Own
-
-Built something useful? Share it:
-
-1. Copy `template.md`
-2. Fill in your use case
-3. Test it works
-4. Submit a PR
-
-**Requirements for submission:**
-- ✅ Copy-paste ready (minimal edits to work)
-- ✅ All `[PLACEHOLDERS]` clearly marked
-- ✅ Prerequisites checklist included
-- ✅ Cost estimate provided
-- ✅ Tested and working
-- ✅ No personal info (use placeholders)
+Use model IDs from your own `agents.defaults.models`. The sample config in this repo uses Z.ai and OpenRouter because it is a working example, not because the runbook requires those providers.
 
 ## Common Configuration
 
-Most showcases need these tools configured in your gateway:
+Most showcases need some mix of:
 
-```yaml
-tools:
-  # For fetching data
-  weather: {}        # Built-in, no API key
-  calendar: {}       # Google, Nextcloud, etc.
-  todoist: {}        # Or your task manager
-  
-  # For research
-  web_search: {}     # Brave, Serper (API key needed)
-  browser: {}        # For HN, Reddit
-  email: {}          # IMAP/SMTP access
-  
-  # For delivery
-  message: {}        # Telegram, Discord
-  
-  # For execution
-  exec: {}           # SSH, local commands
+```json
+{
+  "tools": {
+    "profile": "coding",
+    "web": {
+      "search": {
+        "provider": "duckduckgo",
+        "enabled": true
+      },
+      "fetch": {
+        "enabled": true
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "allowlist",
+      "allowFrom": ["<YOUR_TELEGRAM_USER_ID>"]
+    }
+  }
+}
 ```
+
+Add service-specific plugins or skills only when you need them. Keep ClawHub disabled by default; inspect third-party skills for ideas and rebuild a local version if the pattern is useful.
 
 ## Security Checklist
 
-Before deploying any showcase:
+- [ ] No hardcoded secrets in prompts or config.
+- [ ] Gateway binds to loopback.
+- [ ] Dashboard access uses Tailscale or stays local.
+- [ ] Telegram and group channels are allowlisted.
+- [ ] Destructive commands require confirmation.
+- [ ] Cron jobs use isolated sessions when they do not need live context.
+- [ ] The first run was tested manually.
+- [ ] Logs do not print tokens, passwords, or chat IDs.
 
-- [ ] No hardcoded secrets in prompts or config
-- [ ] API keys in `~/.openclaw/credentials/` directory only
-- [ ] Sensitive commands require confirmation (if applicable)
-- [ ] Output doesn't leak personal data
-- [ ] Isolated sessions for automated jobs
-- [ ] Review what data sources the agent accesses
+## Template
 
-## Troubleshooting
+Use [template.md](template.md) for a new showcase.
 
-| Problem | Solution |
-|---------|----------|
-| Job not running | Check `tz` field matches your timezone |
-| Missing tool | Add to gateway config `tools:` section |
-| Wrong output | Make prompt more specific |
-| Rate limited | Reduce frequency or use cheaper model |
-| Placeholders not replaced | Search for `[YOUR_...]` and fill in |
+Related examples:
 
-## Variations
-
-Each showcase includes ideas for customization:
-
-- **Different schedule** - Change cron expression
-- **Different delivery** - Telegram, Discord, email, Slack
-- **Different sources** - Swap tools for alternatives
-- **Extended scope** - Add more data sources
-- **Simplified version** - Strip down for lower cost
-
-## Related Resources
-
-- [agent-prompts.md](../examples/agent-prompts.md) - Model selection guide
-- [config-example-guide.md](../examples/config-example-guide.md) - Gateway config examples
-- [heartbeat.md](../examples/heartbeat.md) - Periodic checks pattern
-
----
-
-**Want to contribute?** See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+- [agent-prompts.md](../examples/agent-prompts.md)
+- [config-example-guide.md](../examples/config-example-guide.md)
+- [heartbeat-example.md](../examples/heartbeat-example.md)
+- [security-hardening.md](../examples/security-hardening.md)
