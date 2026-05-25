@@ -1,8 +1,8 @@
 # Coeus Knowledge Base v2.0
 
-**Category:** Daily Automation / Personal Knowledge Management  
-**Example Model:** Balanced (Sonnet/Gemini 2.5) for setup, any model for daily use  
-**Updated:** 2026-02-16
+**Category:** Daily Automation / Personal Knowledge Management
+**Example Model:** local or balanced for setup, any suitable model for daily use
+**Updated:** 2026-05-25
 
 > **HOW TO USE THIS:** This is a self-hosted knowledge base with semantic search. It runs locally on your machine, stores data in SQLite, and uses sentence-transformers for embeddings. No external APIs needed for daily operation.
 
@@ -123,7 +123,7 @@ CREATE INDEX idx_blocks_session ON blocks(session_id);
 CREATE INDEX idx_tags_name ON tags(name);
 CREATE INDEX idx_links_confidence ON links(confidence);
 
-INSERT OR IGNORE INTO tags (name) VALUES 
+INSERT OR IGNORE INTO tags (name) VALUES
     ('kubernetes'), ('postgresql'), ('typescript'), ('javascript'), ('python'), ('golang');
 INSERT OR IGNORE INTO tag_aliases (canonical, alias) VALUES
     ('kubernetes', 'k8s'), ('postgresql', 'postgres'), ('typescript', 'ts'),

@@ -1,225 +1,106 @@
 # LinkedIn Drafter
 
-**Category:** Content  
-**Example Model:** Premium tier (Sonnet, Opus, GPT-4/5, etc.)  
-**Updated:** 2026-02-09
+**Category:** Content
+**Example Model:** strong writing model
+**Updated:** 2026-05-25
 
-> **HOW TO USE:** Copy the cron job and prompt below. Replace `[PLACEHOLDERS]` with your values. Creates draft posts weekly for your review before posting.
+Draft posts for review. Do not auto-post.
 
 ## Quick Start
 
-### 1. Prerequisites
+### Prerequisites
 
-- [ ] Notion account (or Airtable, Google Sheets) with database for drafts
-- [ ] Activity logging system (memory files, git commits, or manual notes)
-- [ ] Task/activity tracking (Todoist, Trello, or calendar)
-- [ ] Voice/persona guidelines (optional - can use generic professional tone)
+- [ ] Activity source: memory files, task history, git commits, notes, or calendar.
+- [ ] Draft destination: Notion, Airtable, Markdown file, Google Doc, or task ledger.
+- [ ] Voice notes, if you have them.
+- [ ] A model that is good at writing in a constrained style.
 
-### 2. Copy This Cron Job
-
-Paste into your gateway config's `cron.jobs` section:
-
-```json
-{
-  "name": "linkedin-drafter",
-  "schedule": {
-    "kind": "cron",
-    "expr": "0 10 * * 2",
-    "tz": "UTC"
-  },
-  "payload": {
-    "kind": "agentTurn",
-    "message": "Draft 2-3 LinkedIn posts. Review my recent activity from [YOUR_ACTIVITY_SOURCE]. Identify post-worthy insights. Draft in my voice: direct, no fluff, professional but human, no em dashes/emojis. Rotate topics: [YOUR_TOPIC_1], [YOUR_TOPIC_2], [YOUR_TOPIC_3]. Save drafts to [YOUR_DATABASE] with status 'Draft'."
-  },
-  "sessionTarget": "isolated"
-}
-```
-
-**Replace:**
-- `[YOUR_ACTIVITY_SOURCE]` - Where to look for content (e.g., "memory files from last 7 days", "Todoist completed tasks", "GitHub commits")
-- `[YOUR_TOPIC_1/2/3]` - Your content pillars (e.g., "infrastructure", "homelab", "cost optimization")
-- `[YOUR_DATABASE]` - Where to save drafts (e.g., "Notion LinkedIn Content database")
-
-### 3. Configure Tools
-
-```yaml
-tools:
-  notion: {}      # Or airtable, sheets
-  memory_search: {}  # If using memory files
-  todoist: {}     # Or your task manager
-```
-
-### 4. Test It
+### Add The Job
 
 ```bash
-openclaw cron run linkedin-drafter
+openclaw cron add \
+  --name "linkedin-drafter" \
+  --cron "0 10 * * 2" \
+  --timezone "America/Los_Angeles" \
+  --session isolated \
+  --message "Draft 2 LinkedIn posts from [YOUR_ACTIVITY_SOURCE]. Use my voice: direct, concrete, no hype, no em dashes, no emoji. Topics to prefer: [TOPIC_1], [TOPIC_2], [TOPIC_3]. Save drafts to [YOUR_DRAFT_DESTINATION] with status Draft. Do not post."
 ```
 
----
+### Test
 
-## What This Does
-
-**Problem:** Maintaining LinkedIn visibility requires consistent posting, but writing posts takes time and mental energy. Hard to maintain voice when delegating.
-
-**Solution:** Weekly automated drafting. Every Tuesday at 10 AM UTC, reviews your recent work, identifies insights, drafts 2-3 posts in your voice, saves to database for your review. You post the best one.
-
-## Full Prompt (Detailed)
-
-```
-Draft LinkedIn posts for me.
-
-**My voice characteristics:**
-- Direct, no fluff, grounded tone
-- Professional but human (not corporate)
-- Specific examples over general advice
-- No em dashes, no emojis, no AI-sounding language
-- Clear structure, direct language
-
-**Content topics (rotate through):**
-1. [YOUR_TOPIC_1] - [Brief description]
-2. [YOUR_TOPIC_2] - [Brief description]
-3. [YOUR_TOPIC_3] - [Brief description]
-
-**Process:**
-1. Review my recent activity from [YOUR_ACTIVITY_SOURCE]
-2. Check what I'm actively working on
-3. Identify authentic insights worth sharing
-4. Draft 2-3 posts (150-300 words each)
-5. Vary formats: observation, lesson learned, question, behind-the-scenes
-
-**For each draft:**
-- Hook in first line
-- Specific example or story
-- Clear takeaway or question
-- No hashtags, no "engage with this post" language
-
-Save to [YOUR_DATABASE] with:
-- Title: Post topic
-- Content: Full draft
-- Status: Draft
-- Topic: Category
-- Created: Today's date
+```bash
+openclaw cron list
+openclaw cron run <job-id> --wait
 ```
 
-## Activity Source Options
+## Full Prompt
 
-**Memory Files:**
-```
-Review memory files from last 7 days at [PATH_TO_MEMORY].
-Look for: decisions, lessons, experiments, challenges overcome.
-```
+```text
+Draft 2 LinkedIn posts for review.
 
-**Task Manager:**
-```
-Check completed tasks from last 7 days in [YOUR_TASK_SYSTEM].
-Look for: project completions, problems solved, new tools tried.
-```
+Source material:
+- [YOUR_ACTIVITY_SOURCE]
 
-**Git Activity:**
-```
-Review recent commits and PRs from [GITHUB_USERNAME] repositories.
-Look for: interesting technical decisions, refactoring work, new features.
-```
+Topics to prefer:
+- [TOPIC_1]
+- [TOPIC_2]
+- [TOPIC_3]
 
-**Calendar:**
-```
-Check calendar from last 7 days for meetings, workshops, learning sessions.
-```
+Voice:
+- direct
+- grounded
+- specific examples over general advice
+- professional but plain
+- no em dashes
+- no emoji
+- no "5 lessons" filler unless the source material genuinely supports it
+- no claims that are not in the source material
 
-## Notion Database Schema
+For each draft:
+- first line should state the point plainly
+- 150 to 300 words
+- one idea per post
+- include a specific example or detail
+- end without engagement bait
 
-**Table: LinkedIn Content**
+Save to [YOUR_DRAFT_DESTINATION] with:
+- title
+- content
+- source notes used
+- status: Draft
 
-| Field | Type | Notes |
-|-------|------|-------|
-| Title | Title | Post topic/summary |
-| Content | Text | Full draft text |
-| Status | Select | Draft / Ready / Posted |
-| Topic | Select | [YOUR_TOPIC_1] / [YOUR_TOPIC_2] / [YOUR_TOPIC_3] |
-| Created | Date | Auto-filled |
-| Posted | Date | Fill when posted |
-
-## Alternative: Airtable
-
-Same schema as Notion. Use Airtable API:
-```yaml
-tools:
-  airtable:
-    api_key: "${AIRTABLE_API_KEY}"
-    base_id: "${AIRTABLE_BASE_ID}"
+Do not publish, schedule, or send externally.
 ```
 
-## Voice Guidelines
+## Good Sources
 
-If you don't have a voice doc, add this to your prompt:
-
-```
-**Writing style:**
-- No em dashes (use commas or periods)
-- No emojis
-- Avoid filler phrases like "Great question!" or "I'd be happy to help!"
-- Avoid academic/corporate buzzwords
-- Sound like a competent professional talking to peers
-- One clear idea per post
-```
-
-Or create a `VOICE.md` file and reference it:
-```
-Read VOICE.md for my writing style guidelines, then draft posts.
-```
-
-## Troubleshooting
-
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| Generic posts | No recent activity logged | Start logging work in memory files or tasks |
-| Wrong tone | Voice guidelines unclear | Add more specific examples to prompt |
-| Too similar | Not enough topic variety | Expand topic list, add new categories |
-| All drafts about same thing | Activity source too narrow | Pull from multiple sources (git + tasks + calendar) |
-
-## Lessons Learned
-
-### What Worked
-
-- **Source from actual work** - Posts based on real activity are more authentic
-- **Save to database, don't auto-post** - Review buffer prevents bad posts
-- **Tuesday timing** - Early week energy, time to review before posting
-
-### What Did Not Work
-
-- **Auto-posting** - Some drafts needed heavy editing
-- **Generic topics** - "5 tips for X" performed worse than specific stories
-- **Daily schedule** - Too frequent; weekly is better
-
-### Gotchas
-
-- **Memory gaps** - If you don't log work, agent has nothing to source
-- **Sensitive topics** - Avoid discussing job search, compensation, etc.
-- **Timing** - Posts perform better Tuesday-Thursday, 8-10 AM in your timezone
-
-## Variations
-
-**Twitter/X Crosspost:**
-Add to prompt: "Also create Twitter versions (280 chars, thread if needed)."
-
-**Thread Format:**
-Add: "For one draft, break into 5-tweet thread."
-
-**Analytics Review:**
-Create second job: "Review last week's posts, report engagement."
+| Source | What It Produces |
+| --- | --- |
+| Memory files | Decisions, lessons, patterns |
+| Git commits | Concrete technical work |
+| Task history | Shipped work and blockers |
+| Calendar | Talks, meetings, workshops |
+| Notes | Raw thinking and examples |
 
 ## Security
 
-- **Never auto-post** - Always review before publishing
-- **No sensitive data** - Don't source from confidential work
-- **Database is private** - Keep drafts in private Notion/Airtable
+- Never auto-post.
+- Do not use confidential work.
+- Review drafts manually.
+- Keep draft storage private.
+- Avoid copying private memory into public posts.
+
+## Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| Drafts are generic | Add richer source notes |
+| Voice is off | Add examples of approved posts |
+| Too much polish | Tell it to preserve rough specifics |
+| Sensitive details leak | Add a redaction checklist |
+| Repeated topics | Rotate topic preferences |
 
 ## Related
 
-- [daily-brief](daily-brief.md) - Can surface content ideas
-- [idea-pipeline](idea-pipeline.md) - Research insights make good topics
-
-## Changelog
-
-- **2026-02-09** - Initial version, Tuesdays 10 AM
-- **2026-02-10** - Generalized for public sharing
+- [daily-brief](daily-brief.md)
+- [idea-pipeline](idea-pipeline.md)
