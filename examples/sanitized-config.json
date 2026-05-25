@@ -1,279 +1,347 @@
 {
+  "skills": {
+    "entries": {
+      "1password": { "enabled": false },
+      "apple-notes": { "enabled": false },
+      "apple-reminders": { "enabled": false },
+      "bear-notes": { "enabled": false },
+      "blogwatcher": { "enabled": false },
+      "blucli": { "enabled": false },
+      "bluebubbles": { "enabled": false },
+      "camsnap": { "enabled": false },
+      "clawhub": { "enabled": false },
+      "coding-agent": { "enabled": false },
+      "discord": { "enabled": false },
+      "eightctl": { "enabled": false },
+      "gemini": { "enabled": false },
+      "gifgrep": { "enabled": false },
+      "gog": { "enabled": false },
+      "goplaces": { "enabled": false },
+      "himalaya": { "enabled": false },
+      "imsg": { "enabled": false },
+      "mcporter": { "enabled": false },
+      "model-usage": { "enabled": false },
+      "nano-pdf": { "enabled": false },
+      "notion": { "enabled": false },
+      "obsidian": { "enabled": false },
+      "openai-whisper": { "enabled": false },
+      "openai-whisper-api": { "enabled": false },
+      "openhue": { "enabled": false },
+      "oracle": { "enabled": false },
+      "ordercli": { "enabled": false },
+      "peekaboo": { "enabled": false },
+      "sag": { "enabled": false },
+      "sherpa-onnx-tts": { "enabled": false },
+      "slack": { "enabled": false },
+      "songsee": { "enabled": false },
+      "sonoscli": { "enabled": false },
+      "spotify-player": { "enabled": false },
+      "summarize": { "enabled": false },
+      "things-mac": { "enabled": false },
+      "tmux": { "enabled": false },
+      "trello": { "enabled": false },
+      "voice-call": { "enabled": false },
+      "wacli": { "enabled": false },
+      "xurl": { "enabled": false }
+    }
+  },
   "wizard": {
-    "lastRunAt": "2026-02-09T22:36:03.840Z",
-    "lastRunVersion": "2026.2.9",
-    "lastRunCommand": "configure",
+    "lastRunAt": "2026-05-25T21:11:58.200Z",
+    "lastRunVersion": "2026.5.22",
+    "lastRunCommand": "doctor",
     "lastRunMode": "local"
   },
-  "update": {
-    "channel": "stable"
+  "meta": {
+    "lastTouchedVersion": "2026.5.7",
+    "lastTouchedAt": "2026-05-25T21:11:58.270Z"
   },
-  "auth": {
-    "profiles": {
-      "kimi-coding:default": {
-        "provider": "kimi-coding",
-        "mode": "api_key"
+  "gateway": {
+    "auth": {
+      "mode": "token",
+      "token": "<REDACTED_GATEWAY_TOKEN>"
+    },
+    "mode": "local",
+    "port": 18789,
+    "bind": "loopback",
+    "tailscale": {
+      "mode": "serve",
+      "resetOnExit": true
+    },
+    "controlUi": {
+      "allowInsecureAuth": true,
+      "allowedOrigins": ["https://<YOUR_TAILSCALE_HOSTNAME>"]
+    }
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "~/.openclaw/workspace",
+      "models": {
+        "zai/glm-5.1": { "alias": "GLM" },
+        "zai/glm-5-turbo": {},
+        "openrouter/owl-alpha": {},
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free": {},
+        "openrouter/moonshotai/kimi-k2.6": {},
+        "openrouter/minimax/minimax-m2.5:free": {},
+        "openrouter/google/gemma-4-31b-it": {},
+        "openrouter/free": {},
+        "openrouter/anthropic/claude-sonnet-4.6": {}
       },
-      "openrouter:default": {
-        "provider": "openrouter",
-        "mode": "api_key"
+      "model": {
+        "primary": "zai/glm-5.1",
+        "fallbacks": ["zai/glm-5-turbo"]
       },
-      "openai:default": {
+      "memorySearch": {
+        "enabled": true,
         "provider": "openai",
-        "mode": "api_key"
+        "model": "thenlper/gte-base",
+        "remote": {
+          "baseUrl": "https://openrouter.ai/api/v1",
+          "apiKey": {
+            "source": "env",
+            "provider": "default",
+            "id": "OPENROUTER_API_KEY"
+          }
+        },
+        "sources": ["memory", "sessions"],
+        "experimental": {
+          "sessionMemory": true
+        },
+        "query": {
+          "hybrid": {
+            "enabled": true,
+            "vectorWeight": 0.7,
+            "textWeight": 0.3,
+            "candidateMultiplier": 4,
+            "mmr": {
+              "enabled": true,
+              "lambda": 0.7
+            },
+            "temporalDecay": {
+              "enabled": true,
+              "halfLifeDays": 30
+            }
+          }
+        }
       },
-      "synthetic:default": {
-        "provider": "synthetic",
-        "mode": "api_key"
+      "contextPruning": {
+        "mode": "cache-ttl",
+        "ttl": "6h"
       },
-      "anthropic:default": {
-        "provider": "anthropic",
-        "mode": "token"
+      "compaction": {
+        "memoryFlush": {
+          "enabled": true,
+          "model": "zai/glm-5-turbo",
+          "softThresholdTokens": 40000,
+          "prompt": "Write durable decisions, state changes, blockers, user preferences, and important operational context to memory/YYYY-MM-DD.md. Skip routine chatter. Reply NO_REPLY if nothing needs saving.",
+          "systemPrompt": "Pre-compaction memory flush. Save only durable context. Do not summarize routine chatter. Do not reveal secrets."
+        }
+      },
+      "contextInjection": "always",
+      "bootstrapMaxChars": 20000,
+      "bootstrapTotalMaxChars": 150000
+    }
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "tools": {
+    "profile": "coding",
+    "web": {
+      "search": {
+        "provider": "duckduckgo",
+        "enabled": true,
+        "openaiCodex": {}
+      },
+      "fetch": {
+        "enabled": true
       }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "zai": { "enabled": true },
+      "telegram": { "enabled": true },
+      "duckduckgo": { "enabled": true },
+      "bluebubbles": { "enabled": true },
+      "openrouter": { "enabled": true }
     }
   },
   "models": {
     "mode": "merge",
     "providers": {
-      "synthetic": {
-        "baseUrl": "https://api.synthetic.new/anthropic",
-        "api": "anthropic-messages",
+      "zai": {
+        "baseUrl": "https://api.z.ai/api/coding/paas/v4",
+        "api": "openai-completions",
         "models": [
           {
-            "id": "hf:zai-org/GLM-4.7",
-            "name": "GLM-4.7",
-            "reasoning": false,
+            "id": "glm-5.1",
+            "name": "GLM-5.1",
+            "reasoning": true,
             "input": ["text"],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 198000,
+            "cost": { "input": 1.2, "output": 4, "cacheRead": 0.24, "cacheWrite": 0 },
+            "contextWindow": 202800,
+            "maxTokens": 131100
+          },
+          {
+            "id": "glm-5",
+            "name": "GLM-5",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 1, "output": 3.2, "cacheRead": 0.2, "cacheWrite": 0 },
+            "contextWindow": 202800,
+            "maxTokens": 131100
+          },
+          {
+            "id": "glm-5-turbo",
+            "name": "GLM-5 Turbo",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 1.2, "output": 4, "cacheRead": 0.24, "cacheWrite": 0 },
+            "contextWindow": 202800,
+            "maxTokens": 131100
+          },
+          {
+            "id": "glm-5v-turbo",
+            "name": "GLM-5V Turbo",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "cost": { "input": 1.2, "output": 4, "cacheRead": 0.24, "cacheWrite": 0 },
+            "contextWindow": 202800,
+            "maxTokens": 131100
+          },
+          {
+            "id": "glm-4.7",
+            "name": "GLM-4.7",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 0.6, "output": 2.2, "cacheRead": 0.11, "cacheWrite": 0 },
+            "contextWindow": 204800,
+            "maxTokens": 131072
+          },
+          {
+            "id": "glm-4.7-flash",
+            "name": "GLM-4.7 Flash",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 0.07, "output": 0.4, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 200000,
+            "maxTokens": 131072
+          },
+          {
+            "id": "glm-4.7-flashx",
+            "name": "GLM-4.7 FlashX",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 0.06, "output": 0.4, "cacheRead": 0.01, "cacheWrite": 0 },
+            "contextWindow": 200000,
             "maxTokens": 128000
           },
           {
-            "id": "hf:moonshotai/Kimi-K2.5",
-            "name": "Kimi K2.5",
+            "id": "glm-4.6",
+            "name": "GLM-4.6",
             "reasoning": true,
             "input": ["text"],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 256000,
-            "maxTokens": 8192
-          }
-        ]
-      }
-    }
-  },
-  "logging": {
-    "redactSensitive": "tools"
-  },
-  "agents": {
-    "defaults": {
-      "model": {
-        "primary": "anthropic/claude-sonnet-4-5",
-        "fallbacks": [
-          "openai/gpt-5-mini",
-          "kimi-coding/k2p5",
-          "openrouter/google/gemini-3-flash-preview"
-        ]
-      },
-      "models": {
-        "anthropic/claude-haiku-4-5": {
-          "alias": "haiku"
-        },
-        "anthropic/claude-sonnet-4-5": {
-          "alias": "sonnet"
-        },
-        "anthropic/claude-opus-4-6": {
-          "alias": "opus"
-        },
-        "kimi-coding/k2p5": {
-          "alias": "kimi"
-        }
-      },
-      "workspace": "~/.openclaw/workspace",
-      "memorySearch": {
-        "sources": ["memory", "sessions"],
-        "experimental": {
-          "sessionMemory": true
-        },
-        "provider": "openai",
-        "model": "text-embedding-3-small"
-      },
-      "contextPruning": {
-        "mode": "cache-ttl",
-        "ttl": "6h",
-        "keepLastAssistants": 3
-      },
-      "compaction": {
-        "mode": "default",
-        "memoryFlush": {
-          "enabled": true,
-          "softThresholdTokens": 40000,
-          "prompt": "Extract key decisions, state changes, lessons, blockers to memory/YYYY-MM-DD.md. Format: ## [HH:MM] Topic. Skip routine work. NO_FLUSH if nothing important.",
-          "systemPrompt": "Compacting session context. Extract only what's worth remembering. No fluff."
-        }
-      },
-      "heartbeat": {
-        "model": "openai/gpt-5-nano"
-      },
-      "maxConcurrent": 4,
-      "subagents": {
-        "maxConcurrent": 8
-      }
-    },
-    "list": [
-      {
-        "id": "main",
-        "default": true
-      },
-      {
-        "id": "monitor",
-        "model": {
-          "primary": "openai/gpt-5-nano",
-          "fallbacks": [
-            "openrouter/google/gemini-2.5-flash-lite",
-            "anthropic/claude-haiku-4-5"
-          ]
-        }
-      },
-      {
-        "id": "researcher",
-        "model": {
-          "primary": "kimi-coding/k2p5",
-          "fallbacks": ["synthetic/hf:zai-org/GLM-4.7", "openai/gpt-5-mini"]
-        }
-      }
-    ]
-  },
-  "tools": {
-    "profile": "full",
-    "web": {
-      "search": {
-        "enabled": true,
-        "apiKey": "<YOUR_BRAVE_API_KEY>"
-      },
-      "fetch": {
-        "enabled": true
-      }
-    },
-    "media": {
-      "audio": {
-        "enabled": true,
-        "models": [
+            "cost": { "input": 0.6, "output": 2.2, "cacheRead": 0.11, "cacheWrite": 0 },
+            "contextWindow": 204800,
+            "maxTokens": 131072
+          },
           {
-            "type": "cli",
-            "command": "/path/to/whisper-wrapper",
-            "args": ["{input}"]
+            "id": "glm-4.6v",
+            "name": "GLM-4.6V",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "cost": { "input": 0.3, "output": 0.9, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 128000,
+            "maxTokens": 32768
+          },
+          {
+            "id": "glm-4.5",
+            "name": "GLM-4.5",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 0.6, "output": 2.2, "cacheRead": 0.11, "cacheWrite": 0 },
+            "contextWindow": 131072,
+            "maxTokens": 98304
+          },
+          {
+            "id": "glm-4.5-air",
+            "name": "GLM-4.5 Air",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 0.2, "output": 1.1, "cacheRead": 0.03, "cacheWrite": 0 },
+            "contextWindow": 131072,
+            "maxTokens": 98304
+          },
+          {
+            "id": "glm-4.5-flash",
+            "name": "GLM-4.5 Flash",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 131072,
+            "maxTokens": 98304
+          },
+          {
+            "id": "glm-4.5v",
+            "name": "GLM-4.5V",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "cost": { "input": 0.6, "output": 1.8, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 64000,
+            "maxTokens": 16384
           }
         ]
       }
     }
   },
-  "messages": {
-    "ackReactionScope": "group-mentions",
-    "tts": {
-      "auto": "inbound",
-      "provider": "edge",
-      "edge": {
-        "enabled": true,
-        "voice": "en-GB-RyanNeural"
+  "auth": {
+    "profiles": {
+      "zai:default": {
+        "provider": "zai",
+        "mode": "api_key"
+      },
+      "openrouter:default": {
+        "provider": "openrouter",
+        "mode": "api_key"
       }
     }
-  },
-  "commands": {
-    "native": "auto",
-    "nativeSkills": "auto",
-    "restart": true
   },
   "hooks": {
     "internal": {
       "enabled": true,
       "entries": {
-        "command-logger": {
-          "enabled": true
-        },
-        "boot-md": {
-          "enabled": true
-        },
-        "session-memory": {
-          "enabled": true
-        }
+        "compaction-notifier": { "enabled": true },
+        "bootstrap-extra-files": { "enabled": true },
+        "boot-md": { "enabled": true },
+        "session-memory": { "enabled": true },
+        "command-logger": { "enabled": true }
       }
     }
   },
   "channels": {
     "telegram": {
       "enabled": true,
-      "dmPolicy": "pairing",
-      "botToken": "<YOUR_TELEGRAM_BOT_TOKEN>",
-      "groupPolicy": "allowlist",
-      "streamMode": "partial"
-    },
-    "discord": {
-      "enabled": true,
-      "token": "<YOUR_DISCORD_BOT_TOKEN>",
-      "groupPolicy": "allowlist",
-      "dm": {
-        "enabled": true,
-        "policy": "allowlist",
-        "allowFrom": ["<YOUR_DISCORD_USER_ID>"]
-      },
-      "guilds": {
-        "<YOUR_DISCORD_GUILD_ID>": {
-          "requireMention": false,
-          "users": ["<YOUR_DISCORD_USER_ID>"],
-          "channels": {
-            "*": {
-              "allow": true
-            }
-          }
+      "groups": {
+        "*": {
+          "requireMention": true
         }
-      }
+      },
+      "botToken": "<REDACTED_TELEGRAM_BOT_TOKEN>",
+      "dmPolicy": "allowlist",
+      "allowFrom": ["<YOUR_TELEGRAM_USER_ID>"],
+      "linkPreview": false,
+      "groupAllowFrom": ["<YOUR_TELEGRAM_GROUP_ID>"]
     },
-    "slack": {
-      "mode": "socket",
-      "webhookPath": "/slack/events",
+    "bluebubbles": {
       "enabled": true,
-      "botToken": "<YOUR_SLACK_BOT_TOKEN>",
-      "appToken": "<YOUR_SLACK_APP_TOKEN>",
-      "userTokenReadOnly": true,
-      "groupPolicy": "allowlist",
-      "channels": {}
+      "webhookPath": "/bluebubbles-webhook",
+      "serverUrl": "https://<YOUR_BLUEBUBBLES_SERVER>",
+      "password": "<REDACTED_BLUEBUBBLES_PASSWORD>"
     }
   },
-  "gateway": {
-    "port": 18789,
-    "mode": "local",
-    "bind": "loopback",
-    "auth": {
-      "mode": "token",
-      "token": "<GENERATE_RANDOM_TOKEN>",
-      "allowTailscale": true
-    },
-    "tailscale": {
-      "mode": "serve",
-      "resetOnExit": true
-    }
-  },
-  "plugins": {
-    "entries": {
-      "telegram": {
-        "enabled": true
-      },
-      "slack": {
-        "enabled": true
-      },
-      "discord": {
-        "enabled": true
-      }
+  "messages": {
+    "groupChat": {
+      "visibleReplies": "message_tool"
     }
   }
 }
