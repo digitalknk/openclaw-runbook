@@ -1,172 +1,101 @@
 # Check Quotas Script
 
-Simple script to check API quota status across multiple providers.
+This is an optional helper for provider spend checks. It is not an OpenClaw requirement, and it should not replace provider-side hard limits.
+
+The current runbook recommends OpenClaw auth profiles and the built-in secret flow for provider keys. This script only works for providers whose keys you intentionally expose to a local file or environment variable for reporting.
 
 ## Installation
 
-1. Copy `check-quotas.sh` to your local bin directory:
-
 ```bash
-cp check-quotas.sh ~/.local/bin/check-quotas
+cp examples/check-quotas.sh ~/.local/bin/check-quotas
 chmod +x ~/.local/bin/check-quotas
-```
-
-2. Verify `~/.local/bin` is in your PATH:
-
-```bash
-echo $PATH | grep -q "$HOME/.local/bin" || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 ```
 
 ## Configuration
 
-The script looks for API keys in `~/.openclaw/credentials/` by default.
+By default, the script checks:
 
-**Override with environment variables:**
+- `$OPENROUTER_API_KEY`, then `$OPENCLAW_CREDENTIALS_DIR/openrouter`
+- `$ZAI_API_KEY`, then `$OPENCLAW_CREDENTIALS_DIR/zai`
 
-```bash
-export OPENCLAW_CREDENTIALS_DIR="/path/to/your/credentials"
-export CLAUDE_KEYCHAIN_ITEM="Your-Keychain-Item"
-```
-
-**Expected credential files:**
-
-Each file should contain **only the raw API key** (no variable names, no quotes, no newlines):
+Default credentials directory:
 
 ```bash
-# Correct format - just the raw token:
-echo "sk-ant-api03-xxxxxxxxxxxx" > ~/.openclaw/credentials/anthropic
-
-# Wrong format - do NOT use:
-echo "ANTHROPIC_API_KEY=sk-ant-api03-xxxxxxxxxxxx" > ~/.openclaw/credentials/anthropic
+~/.openclaw/credentials
 ```
 
-**Files the script looks for:**
-- `$CREDENTIALS_DIR/synthetic` - Synthetic API key (raw token only)
-- `$CREDENTIALS_DIR/openrouter` - OpenRouter API key (raw token only)
-- `$CREDENTIALS_DIR/anthropic` - Anthropic API key (raw token only)
+Each file should contain only the raw token:
 
-**macOS Keychain (Claude Code):**
-- The script checks macOS Keychain for Claude Code OAuth credentials
-- Only works on macOS with Claude Code installed
+```bash
+mkdir -p ~/.openclaw/credentials
+printf '%s' '<OPENROUTER_API_KEY>' > ~/.openclaw/credentials/openrouter
+printf '%s' '<ZAI_API_KEY>' > ~/.openclaw/credentials/zai
+chmod 700 ~/.openclaw/credentials
+chmod 600 ~/.openclaw/credentials/*
+```
+
+Do not commit this directory. Do not paste the script output into public issues if provider metadata could identify your account.
 
 ## Usage
-
-Run from anywhere:
-
-```bash
-check-quotas
-```
-
-**Output format (JSON):**
-
-```json
-{
-  "claude_code": {
-    "usage": {...},
-    "limit": {...}
-  },
-  "synthetic": {
-    "credits_remaining": 1000
-  },
-  "openrouter": {
-    "usage": 45.23,
-    "limit": 100.00
-  },
-  "anthropic_api": "valid",
-  "checked_at": "2026-02-09T20:28:00Z"
-}
-```
-
-## Parsing Output
-
-**Check if a provider is over 90% quota:**
-
-```bash
-check-quotas | jq '.openrouter | (.usage / .limit) > 0.9'
-```
-
-**Get remaining Synthetic credits:**
-
-```bash
-check-quotas | jq -r '.synthetic.credits_remaining'
-```
-
-**Pretty print for humans:**
 
 ```bash
 check-quotas | jq .
 ```
 
-## Adding New Providers
+Example output:
 
-To add a new provider, create a function following this pattern:
-
-```bash
-check_yourprovider() {
-    local api_key=$(cat "$CREDENTIALS_DIR/yourprovider" 2>/dev/null || echo "")
-    
-    if [ -z "$api_key" ]; then
-        echo "null"
-        return
-    fi
-    
-    curl -s https://api.yourprovider.com/quota \
-        -H "Authorization: Bearer $api_key" 2>/dev/null || echo "null"
+```json
+{
+  "openrouter": {
+    "configured": true,
+    "key_status": "checked"
+  },
+  "zai": {
+    "configured": true,
+    "key_status": "not_checked"
+  },
+  "checked_at": "2026-05-25T20:28:00Z"
 }
 ```
 
-Then add it to the final jq output.
+## Limits
 
-## Integration with OpenClaw
+- Provider quota APIs differ.
+- Some providers expose spend only in their dashboard.
+- OpenClaw config can route models, but provider dashboard limits are the real billing stop.
+- If you use OpenClaw's secret store only, this script may correctly report a key as not visible.
 
-Use in agent prompts or skills:
+## Adding Providers
 
-```bash
-# Before spawning expensive agent, check quotas
-QUOTAS=$(check-quotas)
-OPENROUTER_USAGE=$(echo $QUOTAS | jq -r '.openrouter.usage // 0')
-
-if [ "$OPENROUTER_USAGE" -gt 90 ]; then
-    echo "OpenRouter quota high, using fallback"
-fi
-```
-
-## Requirements
-
-- `bash`
-- `curl`
-- `jq`
-- `security` (macOS only, for Keychain access)
-
-## Limitations
-
-- Claude Code check only works on macOS
-- Anthropic API has no public quota endpoint, so we just verify the key works
-- Rate limits may apply to quota check APIs themselves
-
-## Security
-
-The script reads API keys from files. Each file should contain **only the raw token** with no variable names or formatting.
-
-**Creating credential files:**
+Add a function that returns JSON and does not print the key:
 
 ```bash
-# Create credentials directory
-mkdir -p ~/.openclaw/credentials
+check_provider() {
+  local api_key
+  api_key="$(read_secret "PROVIDER_API_KEY" "provider")"
 
-# Add your API keys (raw tokens only, no quotes)
-echo "your-api-key-here" > ~/.openclaw/credentials/openrouter
-echo "your-api-key-here" > ~/.openclaw/credentials/synthetic
-echo "your-api-key-here" > ~/.openclaw/credentials/anthropic
+  if [ -z "$api_key" ]; then
+    jq -n '{configured:false}'
+    return
+  fi
 
-# Set proper permissions
-chmod 700 ~/.openclaw/credentials
-chmod 600 ~/.openclaw/credentials/*
+  jq -n '{configured:true, key_status:"not_checked"}'
+}
 ```
 
-**File format:**
-- ✅ Correct: `sk-ant-api03-xxxxx` (raw token only)
-- ❌ Wrong: `ANTHROPIC_API_KEY=sk-ant-api03-xxxxx` (no ENV format)
-- ❌ Wrong: `"sk-ant-api03-xxxxx"` (no quotes)
+## OpenClaw Usage
 
-Never commit API keys to git or share the output publicly.
+Use this only as a local helper in prompts or scripts:
+
+```text
+Before running an expensive research job, run `check-quotas`.
+If OpenRouter reports quota or spend pressure, use the configured fallback model.
+Do not print API keys or full provider account metadata.
+```
+
+## Better Guardrails
+
+- Set hard spend limits in each provider dashboard.
+- Assign cheap models to monitoring and heartbeat jobs.
+- Use explicit model IDs for unattended cron jobs.
+- Review `agents.defaults.models` and `agents.defaults.model.fallbacks` after provider changes.
