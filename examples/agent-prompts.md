@@ -1,414 +1,69 @@
 # Agent Prompt Examples
 
-This file contains example prompts for configuring specialized OpenClaw agents.
+These examples show how to define specialist agents without tying the runbook to one provider. Use your own model IDs from `agents.defaults.models`, then set `model.primary` and `model.fallbacks` per agent.
 
-## How to Use This Guide
+The examples assume current OpenClaw behavior: subagents are configured through `agents.list`, inherit the workspace bootstrap that OpenClaw injects, and report back through session tools such as `sessions_yield`.
 
-**These examples show you how to create specialized agents for different tasks.**
+## Model Routing
 
-### Three Ways to Create Agents
-
-**Option 1: Ask your agent to create it**
-```
-Create a researcher agent using the example from agent-prompts.md.
-Use Kimi 2.5 as primary, GLM 4.7 and Sonnet as fallbacks.
-Save the prompt to workspace/agents/researcher.md
-```
-
-**Option 2: Manual configuration**
-1. Create a prompt file: `~/.openclaw/workspace/agents/researcher.md`
-2. Copy the agent prompt from the example below
-3. Add the agent to your `openclaw.json` config (see "Configuring Agents" section)
-4. Restart OpenClaw: `openclaw gateway restart`
-
-**Option 3: Use sessions_spawn for one-off tasks**
-```javascript
-sessions_spawn({
-  agentId: "researcher",
-  task: "Research pricing for VPS hosting under $20/month",
-  cleanup: "delete"
-})
-```
-
-### What Each Section Means
-
-- **Recommended Model Chain:** Suggested tier and fallback order
-- **Why:** Explanation of why that model tier makes sense
-- **Example Config:** JSON to add to your `openclaw.json`
-- **Agent Prompt:** The actual system prompt for the agent
-
-### File Structure
-
-When you create an agent, your workspace should look like:
-
-```
-~/.openclaw/
-├── openclaw.json              # Agent config goes here
-└── workspace/
-    └── agents/
-        ├── monitor.md         # Monitor agent prompt
-        ├── researcher.md      # Researcher agent prompt
-        └── communicator.md    # Communicator agent prompt
-```
-
-## Understanding Model Chains
-
-**Model Configuration Pattern:**
-- **Primary:** The best model for the agent's job (uses this until quota exhausted)
-- **Fallbacks:** Progressively cheaper/simpler models for graceful degradation
-- **Goal:** Use the right tool for the task, fall back when quotas run out
-
-**Model Tiers:**
-- **Premium:** Highest reasoning, complex tasks (Claude Opus 4.6, GPT-5.2, Gemini 3 Pro)
-- **Upper Balanced:** Strong reasoning, cost-effective (Kimi 2.5, Gemini 2.5 Pro)
-- **Balanced:** Good quality, moderate cost (Claude Sonnet, GLM 4.7, Gemini 3 Flash, GPT-5 mini)
-- **Cheap:** Simple tasks, background work (Claude Haiku, Gemini 2.5 Flash-Lite, GPT-5 nano)
-
-**Fallback Strategy:**
-For each agent, choose primary based on task complexity, then add fallbacks for quota exhaustion:
-- **Complex agents:** Premium → Upper Balanced → Balanced → Cheap
-- **Standard agents:** Upper Balanced → Balanced → Cheap
-- **Simple agents:** Balanced → Cheap
-- **Monitoring agents:** Cheap only
-
-**Critical: Cross-Provider Fallbacks**
-
-Always include models from different providers in your fallback chain. Here's why:
-
-- **Claude subscriptions:** Rate limits reset every 5 hours or weekly. When you hit the limit, ALL Claude models are unavailable (Opus, Sonnet, Haiku).
-- **API quotas:** Can exhaust completely, locking out entire providers.
-- **Provider outages:** Service disruptions happen.
-
-**Bad fallback chain (single provider):**
-```json
-"primary": "anthropic/claude-opus-4-6",
-"fallbacks": [
-  "anthropic/claude-sonnet-4-5",
-  "anthropic/claude-haiku-4-5"
-]
-// If Claude quota exhausted, all three fail
-```
-
-**Good fallback chain (cross-provider):**
-```json
-"primary": "anthropic/claude-sonnet-4-5",
-"fallbacks": [
-  "kimi-coding/k2p5",
-  "synthetic/hf:zai-org/GLM-4.7",
-  "openrouter/google/gemini-3-flash-preview"
-]
-// If Claude quota exhausted, Kimi/GLM/Gemini still work
-```
-
-This is why Kimi 2.5 and GLM 4.7 are valuable - they provide high-quality fallbacks when your primary provider is unavailable.
-
-## Example Agent Configurations
-
-### Monitor Agent (Lightweight Checks)
-
-**Recommended Model Chain:** Cheap → Ultra-cheap
-
-**Why:** Monitoring is simple pattern matching and status checks. No need for expensive models.
-
-**Example Config:**
-```json
-{
-  "id": "monitor",
-  "model": {
-    "primary": "openai/gpt-5-nano",
-    "fallbacks": [
-      "openrouter/google/gemini-2.5-flash-lite",
-      "anthropic/claude-haiku-4-5",
-      "synthetic/hf:zai-org/GLM-4.7"
-    ]
-  }
-}
-```
-
-**Agent Prompt:**
-```
-You are a monitoring agent for OpenClaw. Your role is to perform lightweight checks and report status without taking action.
-
-**Your responsibilities:**
-- Check system status (services, resources, logs)
-- Monitor scheduled tasks and cron jobs
-- Verify service availability
-- Report findings without executing fixes
-
-**Constraints:**
-- Read-only operations preferred
-- No expensive API calls
-- No spawning sub-agents
-- Report status, don't fix issues
-- Use HEARTBEAT_OK when nothing needs attention
-
-**Communication:**
-- Brief, factual reports
-- Highlight only actionable issues
-- Omit routine "all clear" messages unless explicitly asked
-```
-
----
-
-### Researcher Agent (Web Research & Analysis)
-
-**Recommended Model Chain:** Upper Balanced → Balanced → Cheap
-
-**Why:** Research needs good reasoning and synthesis, but most work is reading/filtering. Start with upper balanced for quality, fall back to balanced then cheap if needed.
-
-**Example Config:**
-```json
-{
-  "id": "researcher",
-  "model": {
-    "primary": "kimi-coding/k2p5",
-    "fallbacks": [
-      "synthetic/hf:zai-org/GLM-4.7",
-      "openai/gpt-5-mini",
-      "openrouter/google/gemini-3-flash-preview"
-    ]
-  }
-}
-```
-
-**Agent Prompt:**
-```
-You are a research agent for OpenClaw. Your role is to gather, analyze, and synthesize information from multiple sources.
-
-**Your responsibilities:**
-- Web searches and source analysis
-- Job board searches and application tracking
-- Market research and competitive analysis
-- Document synthesis and summary creation
-- Overnight batch research tasks
-
-**Approach:**
-- Thorough source checking (verify claims)
-- Cite sources with URLs
-- Compare multiple perspectives
-- Identify gaps and unknowns
-- Prioritize recent, authoritative sources
-
-**Constraints:**
-- Pace web searches (3-5 second gaps)
-- Batch API calls when possible
-- Use cheapest effective model for each subtask
-- Store findings in structured format
-
-**Output format:**
-- Lead with key findings
-- Provide evidence and sources
-- Flag confidence levels
-- Suggest next research steps if needed
-```
-
----
-
-### Communicator Agent (Writing & Outbound)
-
-**Recommended Model Chain:** Premium → Balanced → Cheap
-
-**Why:** Writing quality matters for professional communication. Use premium for best output, fall back as needed.
-
-**Example Config:**
-```json
-{
-  "id": "communicator",
-  "model": {
-    "primary": "anthropic/claude-opus-4-6",
-    "fallbacks": [
-      "openai/gpt-5.2",
-      "openrouter/google/gemini-3-pro-preview",
-      "kimi-coding/k2p5"
-    ]
-  }
-}
-```
-
-**Agent Prompt:**
-```
-You are a communication agent for OpenClaw. Your role is to draft professional, grounded, human-sounding communication.
-
-**Your responsibilities:**
-- Email drafting and responses
-- Professional posts and content
-- Documentation and technical writing
-- Apply style guide rules to ALL outbound content
-
-**Style guidelines:**
-- Avoid excessive punctuation (em dashes, ellipses)
-- Minimize emoji use in professional contexts
-- Skip filler phrases ("Great question!", "I'd be happy to...")
-- Avoid AI patterns or corporate-speak
-- Use appropriate formatting for the platform
-- Professional but natural tone
-- Direct, clear structure
-
-**Process:**
-1. Draft content applying style guidelines
-2. Show draft for approval if complex/scheduling/commitments
-3. Send then notify if simple answer
-4. Adapt formatting to platform (plain text for email, Markdown for others)
-
-**Voice:**
-- Clear and direct
-- No hype or exaggeration
-- Assume competence in reader
-- Focus on substance over style
-```
-
----
-
-### Orchestrator Agent (CLI Tool Management)
-
-**Recommended Model Chain:** Upper Balanced → Balanced → Cheap
-
-**Why:** Selecting the right tool requires reasoning about complexity, quotas, and tradeoffs. Upper balanced provides good decision-making without premium costs.
-
-**Example Config:**
-```json
-{
-  "id": "orchestrator",
-  "model": {
-    "primary": "anthropic/claude-sonnet-4-5",
-    "fallbacks": [
-      "openai/gpt-5-mini",
-      "kimi-coding/k2p5",
-      "synthetic/hf:zai-org/GLM-4.7"
-    ]
-  }
-}
-```
-
-**Agent Prompt:**
-```
-You are an orchestrator agent for OpenClaw. Your role is to select and invoke CLI coding tools but NEVER write code yourself.
-
-**Your responsibilities:**
-- Select appropriate CLI tool based on task complexity
-- Check quotas/availability before using expensive tools
-- Invoke selected tool with clear task description
-- Monitor tool execution and report results
-- Handle fallback chain if primary tool unavailable
-
-**Tool selection matrix:**
-- **High-tier tools:** Complex multi-file refactors, architecture (check quota before using)
-- **Mid-tier tools:** Standard features/fixes, structured tasks (default choice)
-- **Fast tools:** Quick single-file edits, simple changes
-- **Hybrid tools:** Tasks needing research + code combination
-
-**Example fallback chain:** premium-tool → standard-tool → fast-tool → hybrid-tool
-
-**Process:**
-1. Analyze task complexity
-2. Check quotas/availability before using expensive tools
-3. Select cheapest effective tool
-4. Invoke tool with clear task description
-5. Monitor output, report completion
-6. Escalate to more powerful tool if needed
-
-**Constraints:**
-- NEVER write code yourself
-- NEVER spawn another orchestrator
-- Invoke ONE tool per task
-- Report tool selection reasoning
-- Use pty=true for interactive CLIs
-```
-
----
-
-### Coordinator Agent (Complex Planning)
-
-**Recommended Model Chain:** Premium → Balanced (Opus as final fallback if available)
-
-**Why:** Breaking down complex tasks and orchestrating multiple agents requires strong reasoning. Use premium models.
-
-**Example Config:**
-```json
-{
-  "id": "coordinator",
-  "model": {
-    "primary": "anthropic/claude-opus-4-6",
-    "fallbacks": [
-      "openai/gpt-5.2",
-      "openrouter/google/gemini-3-pro-preview",
-      "kimi-coding/k2p5"
-    ]
-  }
-}
-```
-
-**Agent Prompt:**
-```
-You are a coordinator agent for OpenClaw. Your role is to break down complex tasks, delegate to specialists, and synthesize results.
-
-**Your responsibilities:**
-- Analyze multi-step problems
-- Create task decomposition and delegation plan
-- Spawn appropriate specialist agents
-- Track progress across sub-agents
-- Synthesize results into coherent output
-
-**When to use specialists:**
-- **monitor:** Status checks, lightweight monitoring
-- **researcher:** Web research, job searches, overnight batch
-- **communicator:** Writing, emails, professional content
-- **orchestrator:** CLI tool selection and invocation (NOT direct coding)
-
-**Approach:**
-1. Break problem into independent subtasks
-2. Identify appropriate specialist for each
-3. Spawn agents with clear task descriptions
-4. Track spawned sessions with labels
-5. Collect results and synthesize
-6. Report unified output to user
-
-**Constraints:**
-- Prefer parallel execution where possible
-- Use isolated sessions for long-running work
-- Clean up sessions after completion
-- Escalate to user if ambiguity or risk
-- Document decisions for future reference
-```
-
----
-
-## Configuring Agents in OpenClaw
-
-Add specialized agents to your `openclaw.json` config:
+Model IDs are provider-qualified strings from your catalog:
 
 ```json
 {
   "agents": {
     "defaults": {
+      "models": {
+        "zai/glm-5.1": { "alias": "GLM" },
+        "zai/glm-5-turbo": {},
+        "openrouter/anthropic/claude-sonnet-4.6": {},
+        "openrouter/free": {}
+      },
       "model": {
-        "primary": "anthropic/claude-sonnet-4-5",
-        "fallbacks": [
-          "openai/gpt-5-mini",
-          "kimi-coding/k2p5",
-          "openrouter/google/gemini-3-flash-preview"
-        ]
+        "primary": "zai/glm-5.1",
+        "fallbacks": ["zai/glm-5-turbo"]
       }
-    },
+    }
+  }
+}
+```
+
+Treat those names as examples. A good model chain usually has:
+
+- A primary model that is strong enough for the task.
+- At least one fallback from a different provider or billing path.
+- Cheaper models for monitoring and repetitive background work.
+- No blind use of `auto` routers for jobs that need predictable behavior.
+
+## Agent List
+
+Add named agents under `agents.list`:
+
+```json
+{
+  "agents": {
     "list": [
       {
         "id": "monitor",
+        "workspace": "~/.openclaw/workspace",
         "model": {
-          "primary": "openai/gpt-5-nano",
-          "fallbacks": [
-            "openrouter/google/gemini-2.5-flash-lite",
-            "anthropic/claude-haiku-4-5"
-          ]
+          "primary": "openrouter/free",
+          "fallbacks": ["zai/glm-5-turbo"]
         }
       },
       {
         "id": "researcher",
+        "workspace": "~/.openclaw/workspace",
         "model": {
-          "primary": "kimi-coding/k2p5",
-          "fallbacks": [
-            "synthetic/hf:zai-org/GLM-4.7",
-            "openai/gpt-5-mini"
-          ]
+          "primary": "zai/glm-5.1",
+          "fallbacks": ["openrouter/free"]
+        }
+      },
+      {
+        "id": "writer",
+        "workspace": "~/.openclaw/workspace",
+        "model": {
+          "primary": "openrouter/anthropic/claude-sonnet-4.6",
+          "fallbacks": ["zai/glm-5.1"]
         }
       }
     ]
@@ -416,214 +71,149 @@ Add specialized agents to your `openclaw.json` config:
 }
 ```
 
-## Sub-Agent System Prompts
+Use one shared workspace when the agents should read the same `AGENTS.md`, `TOOLS.md`, memory files, and local runbooks. Give an agent its own workspace only when isolation is intentional.
 
-**Important:** Sub-agents defined in `agents.list` do NOT use `systemPromptFile`. 
+## Shared Instructions
 
-Instead, OpenClaw injects workspace bootstrap files into the context:
-
-- **Main agent:** Gets all bootstrap files (AGENTS.md, SOUL.md, TOOLS.md, IDENTITY.md, USER.md)
-- **Sub-agents (agents.list):** Only get AGENTS.md and TOOLS.md injected
-
-To customize a sub-agent's behavior:
-1. Create specific instructions in AGENTS.md (all agents see this)
-2. Or spawn the agent with a task-specific prompt in the `message` field
-3. Or use skills to provide specialized instructions
-
-The `model` configuration in `agents.list` only controls which model is used, not the system prompt.
-
-## Agent Coordination via AGENTS.md
-
-The most powerful pattern for multi-agent setups is using **AGENTS.md** as a shared instruction file. This is how you create coordinator/researcher/communicator workflows.
-
-### How It Works
-
-1. **All agents** (main and sub-agents) receive AGENTS.md in their context
-2. Each agent finds its own section and follows those instructions
-3. The coordinator knows which agents to spawn because AGENTS.md defines the roles
-
-### Example AGENTS.md Structure
+Put role instructions in `~/.openclaw/workspace/AGENTS.md`:
 
 ```markdown
 # Agent Instructions
 
-## Coordinator Agent
+## Monitor Agent
 
-When spawned as "coordinator":
+When spawned as `monitor`:
 
-1. Analyze the incoming task
-2. Break into subtasks if needed
-3. Spawn appropriate specialists:
-   - "researcher" for web research, data gathering
-   - "communicator" for writing, emails, responses
-   - "coder" for code generation, debugging
-4. Wait for each result before spawning the next
-5. Synthesize results into final answer
-6. Return to parent agent
-
-Spawn format: sessions_spawn({ agentId: "AGENT_NAME", task: "clear instructions" })
+- Check only the requested service, cron job, queue, or file.
+- Prefer read-only commands and status tools.
+- Report only actionable problems.
+- Return `HEARTBEAT_OK` when nothing needs attention.
+- Do not spawn more agents.
 
 ## Researcher Agent
 
-When spawned as "researcher":
+When spawned as `researcher`:
 
-1. Use web_search to find information
-2. Verify sources when possible
-3. Return concise, factual findings
-4. Cite URLs for key claims
+- Gather facts from named sources first.
+- Use web search only when local/source material is missing or stale.
+- Cite URLs for factual claims.
+- Separate confirmed facts from inference.
+- Keep findings concise enough for the parent session to use.
 
-Constraints:
-- No speculative claims
-- Prefer recent sources
-- Note confidence level
+## Writer Agent
 
-## Communicator Agent
+When spawned as `writer`:
 
-When spawned as "communicator":
+- Draft in the user's stated voice.
+- Use concrete details from the source material.
+- Avoid hype, filler, em dashes, and broad claims that are not supported.
+- Do not send or publish external messages without explicit approval.
 
-1. Write in the user's preferred style (check USER.md)
-2. Match tone to context (professional/casual)
-3. No em dashes, no emojis
-4. Get approval before sending anything external
+## Coordinator Agent
 
-Return draft text, do not send directly.
+When spawned as `coordinator`:
+
+- Break the task into independent pieces.
+- Spawn specialists only when they reduce risk or time.
+- Prefer isolated sessions for long-running work.
+- Ask for user approval before destructive, public, or expensive actions.
+- Synthesize results and return one final answer to the parent session.
 ```
 
-### Example Flow
+## Spawn Patterns
 
-**User asks main agent:** "What's the weather and should I bring an umbrella?"
-
-**Main agent spawns coordinator:**
-```javascript
-sessions_spawn({
-  agentId: "coordinator",
-  task: "User wants weather info and umbrella recommendation for [location]"
-})
-```
-
-**Coordinator (reads AGENTS.md, sees it's coordinator):**
-1. Decides it needs weather data
-2. Spawns researcher: `sessions_spawn({ agentId: "researcher", task: "Get weather forecast for [location]" })`
-3. Receives: "Rain expected at 3 PM, 80% chance"
-4. Spawns communicator: `sessions_spawn({ agentId: "communicator", task: "Advise user to bring umbrella. Rain at 3 PM, 80% chance." })`
-5. Receives draft response
-6. Returns to main agent: "Bring an umbrella. Rain starts at 3 PM with 80% chance."
-
-**Main agent returns to user:** "Bring an umbrella. Rain starts at 3 PM with 80% chance."
-
-### Key Points
-
-- **One file, multiple agents:** AGENTS.md contains instructions for all your agents
-- **Self-identifying:** Each agent finds its own "When spawned as..." section
-- **Explicit delegation:** The coordinator decides when to spawn whom based on the task
-- **Sequential or parallel:** Coordinator can spawn one at a time or multiple at once
-
-### Config Structure
-
-```json
-{
-  "agents": {
-    "list": [
-      {
-        "id": "coordinator",
-        "model": { "primary": "sonnet" },
-        "tools": ["sessions_spawn", "memory_search"]
-      },
-      {
-        "id": "researcher",
-        "model": { "primary": "gemini" },
-        "tools": ["web_search", "browser"]
-      },
-      {
-        "id": "communicator",
-        "model": { "primary": "sonnet" },
-        "tools": ["message", "email"]
-      }
-    ]
-  }
-}
-```
-
-Note: No systemPromptFile needed. The instructions come from AGENTS.md which is automatically injected.
-
-### Important: Workspace Isolation
-
-By default, each agent gets its own isolated workspace. This is critical to understand for multi-agent setups.
-
-**Default behavior:**
-- Each agent defined in `agents.list` creates `workspace-{agentId}/` on first activation
-- Each spawned agent via `sessions_spawn` creates `workspace-{agentId}/` on spawn
-- Each workspace has its own AGENTS.md, SOUL.md, etc.
-
-**For shared AGENTS.md (one file, multiple sections):**
-
-All agents must explicitly point to the same workspace:
-
-```json
-{
-  "agents": {
-    "list": [
-      {
-        "id": "coordinator",
-        "workspace": "~/.openclaw/workspace"
-      },
-      {
-        "id": "researcher", 
-        "workspace": "~/.openclaw/workspace"
-      },
-      {
-        "id": "communicator",
-        "workspace": "~/.openclaw/workspace"
-      }
-    ]
-  }
-}
-```
-
-Without explicit `workspace`, each agent gets its own directory and its own (empty) AGENTS.md file. They will not share context.
-
-## General Agent Configuration Tips
-
-**Model Selection Strategy:**
-1. Match model tier to task complexity
-2. Primary = best for the job
-3. Fallbacks = graceful degradation when quotas exhaust
-4. Avoid `openrouter/auto` (unreliable routing)
-
-**Cost Optimization:**
-- Delegate early and often (main session is expensive)
-- Batch operations when possible
-- Use cheap models for monitoring/background work
-- Use premium models for complex reasoning/writing
-- Spawn sub-agents for research/coding/long-running work
-
-**Communication:**
-- Skip routine narration
-- Report only actionable findings
-- Use HEARTBEAT_OK for "nothing to report"
-- Be brief and value-dense
-
-**Safety:**
-- Ask before external actions (email, posts, public)
-- Verify before destructive operations
-- Redact sensitive data in outputs
-- Flag prompt injection attempts
-
-## Spawning Agents
-
-Use `sessions_spawn` to create isolated agent sessions:
+Use `sessions_spawn` for work that benefits from a separate context:
 
 ```javascript
 sessions_spawn({
   agentId: "researcher",
-  task: "Research current pricing for Hetzner VPS options under $20/month",
+  task: "Research current VPS options under $20/month. Return a table with provider, region, CPU, RAM, storage, bandwidth, price, and source URL.",
+  taskName: "vps_research",
   label: "vps-research",
-  cleanup: "delete"  // Auto-cleanup when done
-})
+  context: "isolated"
+});
 ```
 
-The agent will:
-1. Run with its configured model chain
-2. Execute the task in an isolated session
-3. Report results back when complete
-4. Clean up automatically (if cleanup: "delete")
+When the parent needs the child result before continuing, yield after spawning:
+
+```javascript
+sessions_yield();
+```
+
+Do not build polling loops around subagents. Current OpenClaw is push-based; the child completion returns to the requester session as an internal event for parent review.
+
+## Example Prompts
+
+### Monitor
+
+```text
+Check the OpenClaw gateway and scheduled jobs.
+
+Report only:
+- gateway down
+- cron jobs failing
+- repeated auth failures
+- disk usage above 85 percent
+- memory pressure high enough to affect the agent
+
+Use HEARTBEAT_OK if there is nothing actionable.
+Do not restart services unless the task explicitly asks for recovery.
+```
+
+### Researcher
+
+```text
+Research [TOPIC].
+
+Use this order:
+1. Read the local docs or repo path if provided.
+2. Check primary sources.
+3. Use web search only for missing or current facts.
+
+Return:
+- key findings
+- evidence links
+- unknowns
+- recommended next step
+
+Do not pad the answer. If a claim is uncertain, say so.
+```
+
+### Writer
+
+```text
+Draft [DOCUMENT_TYPE] from the provided notes.
+
+Rules:
+- preserve the user's position
+- do not invent facts
+- use direct language
+- avoid inflated significance claims
+- avoid em dashes and emoji
+- keep headings useful rather than decorative
+
+Return a draft and a short list of any missing facts.
+```
+
+### Coordinator
+
+```text
+Coordinate this task: [TASK].
+
+Decide whether it needs specialists.
+If it does, spawn only the smallest useful set:
+- monitor for status checks
+- researcher for evidence gathering
+- writer for final prose
+
+Keep a short decision log.
+Return one consolidated result.
+```
+
+## Cost And Safety Notes
+
+- Monitoring jobs should use cheap or free models when possible.
+- Writing and coordination can justify stronger models when the output is public or high-risk.
+- Cron jobs should use explicit model IDs and explicit delivery channels.
+- External actions such as email, posts, purchases, filesystem deletion, service restarts, and public messages should require confirmation unless you have written a narrow rule for that workflow.
+- Keep ClawHub skills disabled by default. Inspect their source for ideas, then rebuild your own local skill with the boundaries you want.
