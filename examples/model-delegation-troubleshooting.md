@@ -1,6 +1,11 @@
 # Model Delegation Troubleshooting
 
 **Workarounds for common OpenClaw subagent delegation issues.**
+**Ownership note:** Community-contributed example. Preserve the source context and avoid rewriting it as the runbook author's personal setup.
+
+## Current-Version Note
+
+This example documents delegation behavior observed in an older OpenClaw 2026.x setup. Before applying the workaround, verify the current model-routing behavior with `openclaw doctor`, `openclaw models list`, and a harmless subagent test.
 
 ## The Problem
 
