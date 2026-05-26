@@ -79,6 +79,34 @@ Return HEARTBEAT_OK only if there is truly nothing to report.
 - Use an isolated session so the brief does not pollute the main conversation.
 - Use a cheaper model if the sources are simple and stable.
 - Keep the dashboard off the public internet. Use Tailscale for Control UI access, or use a local Gateway plus a messaging channel for remote briefs.
+- Run the job manually for a few days before relying on it.
+- Keep the brief short enough to read from a phone notification.
+
+## What This Does
+
+**Problem:** Calendar, weather, tasks, and reminders are spread across different places. By the time you check all of them manually, the morning context is already fragmented.
+
+**Solution:** One scheduled run collects the useful pieces and sends a compact brief to the channel you already check.
+
+## What Worked
+
+- A consistent time made the brief easier to trust.
+- Short sections worked better than a long narrative.
+- Skipping empty sections kept the brief from feeling noisy.
+- Isolated cron sessions kept the main conversation cleaner.
+
+## What Did Not Work
+
+- Minute-by-minute calendar updates were not reliable enough to treat this like an alerting system.
+- Long task lists made the brief easier to ignore.
+- Pulling from too many sources made the job slower and more expensive.
+
+## Gotchas
+
+- Calendar sync delays are real.
+- Weather APIs can fail or rate-limit.
+- Delivery channels handle Markdown differently.
+- If the prompt does not say to skip empty sections, the agent may produce filler.
 
 ## Troubleshooting
 
@@ -94,3 +122,8 @@ Return HEARTBEAT_OK only if there is truly nothing to report.
 
 - [idea-pipeline](idea-pipeline.md)
 - [tech-discoveries](tech-discoveries.md)
+
+## Changelog
+
+- **2026-02-09** - Initial version
+- **2026-05-25** - Updated for current cron commands, isolated sessions, and Tailscale-first access

@@ -79,11 +79,24 @@ The `showcases/` directory contains automation patterns you can adapt:
 
 Treat showcases as starting points. Review tool access, channels, delivery targets, and model choices before running them unattended. Some showcases are community contributions or external project reviews; keep their attribution intact.
 
+## Share This
+
+If this guide helped you, please consider:
+
+- sharing it with others who might find it useful;
+- linking back if you reference it in blog posts, videos, or other resources;
+- submitting your own showcases so others can learn from your setup.
+
+This is a community resource. The more people contribute real working patterns, the better it gets.
+
 ## Community resources
 
 - [OpenClaw Docs](https://docs.openclaw.ai) - Official documentation
 - [ClawHub](https://clawhub.com) - Good for discovery and source inspection; not something I install from blindly
 - [OpenClaw GitHub](https://github.com/openclaw/openclaw) - Issues, releases, and source
+- [awesome-openclaw-usecases](https://github.com/hesamsheikh/awesome-openclaw-usecases) - Real-world use cases and examples
+- [awesome-openclaw](https://github.com/SamurAIGPT/awesome-openclaw) - Curated tools and resources
+- [awesome-openclaw-skills](https://github.com/VoltAgent/awesome-openclaw-skills) - Community-contributed skills to inspect before rebuilding your own
 
 ## Contributing
 

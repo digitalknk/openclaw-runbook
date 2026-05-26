@@ -84,6 +84,29 @@ Add service-specific plugins or skills only when you need them. Keep ClawHub dis
 
 Use [template.md](template.md) for a new showcase.
 
+## Submitting Your Own
+
+Useful showcases include:
+
+- what problem the automation solves;
+- what tools, channels, and model tier it needs;
+- a tested quick start;
+- the full prompt or rules;
+- what worked, what did not, and gotchas;
+- security notes for secrets, channels, and destructive actions.
+
+If the showcase came from someone else or reviews an external project, preserve that attribution. Do not rewrite community-contributed examples as if they are the runbook author's personal setup.
+
+## Troubleshooting
+
+| Problem | First Check |
+| --- | --- |
+| Cron job does not run | `openclaw cron list` and timezone |
+| Output goes nowhere | channel delivery target and allowlist |
+| Job is too expensive | model tier, concurrency, and retry behavior |
+| Prompt follows web-page instructions | prompt injection rules and tool policy |
+| Showcase feels stale | compare against current OpenClaw docs before running |
+
 Related examples:
 
 - [agent-prompts.md](../examples/agent-prompts.md)

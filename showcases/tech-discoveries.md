@@ -84,7 +84,39 @@ Return HEARTBEAT_OK if there is nothing worth sending.
 | Scraping gets blocked | Use RSS or official APIs |
 | Output is too chatty | Require one sentence per item |
 
+## What Worked
+
+- Curation beat aggregation. Five good links were better than fifty random ones.
+- Narrow source lists produced better results than broad web search.
+- Asking for "why it matters to my interests" filtered out a lot of noise.
+- Delivery to chat worked well when the output stayed short.
+
+## What Did Not Work
+
+- Auto-clicking newsletter links was brittle because many use tracking redirects.
+- GitHub Trending can surface joke repos and short-lived hype.
+- General AI-news feeds were too noisy without explicit skip rules.
+
+## Gotchas
+
+- Link rot happens. Prefer canonical URLs.
+- Some newsletters block scraping. Use RSS or official APIs when possible.
+- A weekly digest should not become another inbox to triage.
+
+## Variations
+
+**Breaking alert:** Run only for specific keywords and send only high-confidence matches.
+
+**Research queue:** Create OpenClaw tasks for items that deserve a deeper look.
+
+**Local archive:** Save links to a Markdown file instead of sending a chat message.
+
 ## Related
 
 - [idea-pipeline](idea-pipeline.md)
 - [daily-brief](daily-brief.md)
+
+## Changelog
+
+- **2026-02-09** - Initial version, Sundays 8 AM
+- **2026-05-25** - Updated for current cron command style and tighter source rules

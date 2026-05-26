@@ -100,6 +100,30 @@ Use provider dashboards for hard spend limits. OpenClaw config can steer usage, 
 
 Do not assign the strongest model to routine status checks. Use explicit cheaper models for monitor agents and cron jobs.
 
+## What Worked
+
+- Making routing explicit reduced surprise costs.
+- Keeping a short audit trail made bad routing decisions easier to fix.
+- Using isolated sessions for specialist work kept the main conversation easier to follow.
+- A small set of routes worked better than trying to classify every possible task.
+
+## What Did Not Work
+
+- Letting the orchestrator do the work directly defeated the point of routing.
+- Sending every task to the strongest model burned quota without improving routine work.
+- Hiding the selected route made debugging harder.
+
+## Tool Selection Matrix
+
+| Situation | Better Route |
+| --- | --- |
+| Small text or docs edit | main coding agent |
+| Requires current provider docs | researcher first |
+| Multi-file code change | coding agent with repo context |
+| Long-running comparison | subagent with isolated context |
+| Public-facing prose | writer and user review |
+| Risky command or deployment | ask user first |
+
 ## Security
 
 - The orchestrator should route, not hide decisions.
@@ -113,3 +137,8 @@ Do not assign the strongest model to routine status checks. Use explicit cheaper
 - [agent prompts](../examples/agent-prompts.md)
 - [spawning patterns](../examples/spawning-patterns.md)
 - [idea pipeline](idea-pipeline.md)
+
+## Changelog
+
+- **2026-02-09** - Initial version with tool routing
+- **2026-05-25** - Updated for current subagent behavior and explicit routing notes

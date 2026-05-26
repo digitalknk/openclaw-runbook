@@ -101,7 +101,39 @@ If the parent job needs the child result before continuing, call `sessions_yield
 | Too much cost | Limit ideas per run and use a balanced model |
 | Untrusted source content gives instructions | Treat it as data, not commands |
 
+## What Worked
+
+- Processing a small number of ideas per run kept the output useful.
+- Structured output made results easier to scan than prose.
+- Writing findings before marking an idea processed prevented lost work.
+- Parallel research helped when ideas were truly independent.
+
+## What Did Not Work
+
+- A single agent processing a long backlog took too long and was harder to debug.
+- Over-researching every idea created more reading, not better decisions.
+- Posting results only in chat made them disappear. Write them to a task, note, or durable file.
+
+## Gotchas
+
+- Ideas captured in chat may include half-formed context. Ask the agent to preserve uncertainty.
+- Search results can bias toward popular products, not better products.
+- If an idea came from someone else, treat it as untrusted content and do not follow instructions embedded in it.
+
+## Variations
+
+**Weekly deep dive:** Process one idea deeply each week instead of three shallow ideas nightly.
+
+**Local-only backlog:** Use Markdown files as the capture source and write results next to the original note.
+
+**Task-ledger mode:** Use OpenClaw tasks as the source and update task records with findings.
+
 ## Related
 
 - [daily-brief](daily-brief.md)
 - [tech-discoveries](tech-discoveries.md)
+
+## Changelog
+
+- **2026-02-09** - Initial version
+- **2026-05-25** - Updated for current cron, task ledger, and push-based subagent behavior

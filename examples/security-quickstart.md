@@ -128,6 +128,20 @@ Check:
 Keep the guidance provider-agnostic. My model list is illustrative and may use Z.ai, OpenRouter, or another provider.
 ```
 
+## Prompt 7: Anthropic Subscription Or API Path
+
+```text
+Review whether my Anthropic usage is coming from API keys, OpenRouter, Claude Code, or Claude plan/Agent SDK credits.
+
+Check:
+- which Anthropic-related auth profiles or OAuth/subscription tokens are configured
+- whether unattended jobs depend on a monthly plan credit
+- whether extra usage credits are enabled
+- what happens when the plan credit is exhausted
+
+Do not assume subscription access means unlimited OpenClaw usage. If this setup will run unattended, recommend the path with the clearest quota and billing controls.
+```
+
 ## Common Fixes
 
 | Finding | Fix |

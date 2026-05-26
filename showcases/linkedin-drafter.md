@@ -100,7 +100,39 @@ Do not publish, schedule, or send externally.
 | Sensitive details leak | Add a redaction checklist |
 | Repeated topics | Rotate topic preferences |
 
+## What Worked
+
+- Drafting from actual work produced better posts than starting from generic topics.
+- Saving drafts for review was safer than trying to auto-post.
+- A weekly cadence was easier to review than a daily one.
+- Keeping source notes with each draft made editing faster.
+
+## What Did Not Work
+
+- Auto-posting was a bad idea. Some drafts need heavy editing or should not be public at all.
+- Asking for too many drafts produced filler.
+- Generic "professional" tone made posts sound interchangeable.
+
+## Gotchas
+
+- Memory gaps matter. If you do not log the work, the agent has nothing specific to use.
+- Private client, employer, or product details can leak if the prompt does not include a redaction pass.
+- Timing advice changes. Do not overfit the cron schedule to old social-media advice.
+
+## Variations
+
+**Short-form draft:** Ask for one short post under 120 words.
+
+**Technical thread:** Ask for a structured technical explanation, then manually adapt it before posting.
+
+**Internal newsletter:** Use the same source material but save it as a private team update.
+
 ## Related
 
 - [daily-brief](daily-brief.md)
 - [idea-pipeline](idea-pipeline.md)
+
+## Changelog
+
+- **2026-02-09** - Initial version, Tuesdays 10 AM
+- **2026-05-25** - Updated for current cron command style and review-only publishing

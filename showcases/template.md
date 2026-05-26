@@ -119,6 +119,33 @@ Create or update OpenClaw tasks for each actionable item.
 | Too much output | Prompt too broad | Add limits and skip rules |
 | Repeated noise | No no-op signal | Tell it to return `HEARTBEAT_OK` |
 
+## Lessons Learned
+
+### What Worked Well
+
+- [Technique that was effective]
+- [Prompt constraint that improved output]
+- [Operational habit that made this reliable]
+
+### What Did Not Work
+
+- [Approach you abandoned]
+- [Source that was too noisy]
+- [Schedule that created too much output]
+
+### Gotchas To Watch For
+
+- [Rate limits, timing issues, channel formatting, stale data, or auth failures]
+- [Anything that made the automation look correct while silently failing]
+
+## Variations
+
+**Alternative schedule:** [Brief description]
+
+**Different delivery channel:** [Brief description]
+
+**Read-only mode:** [Brief description]
+
 ## Security Notes
 
 - No hardcoded secrets.
@@ -132,3 +159,8 @@ Create or update OpenClaw tasks for each actionable item.
 - [OpenClaw Showcases](README.md)
 - [Security hardening](../examples/security-hardening.md)
 - [Heartbeat example](../examples/heartbeat-example.md)
+
+## Changelog
+
+- **[YYYY-MM-DD]** - Initial version by [author]
+- **[YYYY-MM-DD]** - [Change description]

@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-OpenClaw is useful when you treat it like infrastructure instead of a chatbot.
+OpenClaw is useful, but most of the pain people run into comes from letting one model do everything, chasing hype, or running expensive models in places that do not need them.
 
 The setup that has held up for me is simple: keep access private, make model routing explicit, use the built-in task and memory systems, keep skills local, and do not expose the Gateway just because remote access sounds convenient.
 
@@ -14,6 +14,12 @@ This guide was refreshed against the local OpenClaw docs at commit `5dccba7405` 
 - [OpenClaw FAQ](https://docs.openclaw.ai/help/faq)
 - [OpenClaw GitHub Issues](https://github.com/openclaw/openclaw/issues)
 - [OpenClaw Pull Requests](https://github.com/openclaw/openclaw/pulls)
+
+I kept seeing the same questions come up around OpenClaw. People asking why it feels slow, why it keeps planning instead of doing, why it forgets things, or why free tiers disappear overnight. After answering the same threads over and over, it made more sense to write this once and link it.
+
+This is not official guidance, and I am not affiliated with OpenClaw or any model provider. This is simply what I learned by running it, breaking it, and doing that loop more times than I would like to admit.
+
+Reading open issues and recent PRs has saved me hours. More than once I thought I broke something, only to realize it was already known and actively being worked on.
 
 ## Start with current onboarding
 
@@ -112,9 +118,33 @@ The model names above are not the recommendation. Use whatever providers you tru
 
 My current example uses Z.ai and OpenRouter because that is what I am testing. Yours should match your accounts, quota limits, and tolerance for latency.
 
+## Auto-mode and blind routing
+
+I tried auto-mode and blind routing early on. Stopped using both.
+
+The idea of letting the system decide which model to use sounds great. When I actually ran it, it led to indecision, unexpected cost spikes, and behavior I could not reason about when something went wrong.
+
+Being explicit works better. Default routing stays cheap and predictable. Agents get pinned to specific models for specific jobs. When something expensive runs, it should be because you asked for it.
+
+Less magical. Far more debuggable.
+
+## Why strong models should not be defaults
+
+High-quality models are useful. I use them. They are good at restructuring prompts, designing agents, reasoning through messy problems, and fixing things that are already broken.
+
+Where I got burned was leaving that level of model running all day.
+
+It felt powerful until I hit rate limits and ended up locked out waiting for quotas to refresh. At that point you are not building anything. You are just waiting.
+
+Strong models work best when they are scoped. Pin them to specific agents and call them when you actually need them. Do not leave them in the default coordinator loop burning through quota on routine work.
+
 ## Do not buy hardware first
 
 Local models are useful for experimentation and some background work. They are not automatically cheaper once you count hardware, setup time, degraded quality, and debugging.
+
+There has been a lot of hype around buying Mac minis or Mac Studios just to run OpenClaw. I would strongly recommend against doing this early.
+
+Not everyone has $600 to drop on a tool, and even if you do, it is usually the wrong move to make first. The FOMO around OpenClaw is real. It is easy to feel like you need dedicated hardware immediately.
 
 I would not buy a Mac mini, Mac Studio, or GPU box just for OpenClaw until you know:
 
@@ -124,6 +154,22 @@ I would not buy a Mac mini, Mac Studio, or GPU box just for OpenClaw until you k
 - what failure modes you need to isolate.
 
 Use hosted models until you have real usage data. Then decide whether local inference solves an actual problem.
+
+The math rarely works out unless you already have serious hardware. A Mac Studio with 512 GB of unified memory and 2 TB of storage runs over $9,000. To realistically host very large models with usable performance, you can quickly end up looking at multiple machines. Unless you are building a business that needs that hardware for more than just OpenClaw, skip it.
+
+Local models are fine for experimentation and simple tasks. But I have found that bending over backwards to save a few cents usually costs more in lost time and degraded performance than just paying for API calls.
+
+One related note: some free-tier hosted options are not much better. NVIDIA NIM's free tiers and other free hosted queues can be crowded enough that responses arrive in minutes instead of seconds. That kind of latency makes agent workflows painful. Free does not always mean usable.
+
+## The hype problem
+
+This part is worth saying.
+
+There is a lot of hype around OpenClaw right now. Flashy demos, YouTube videos promising it will replace everything you do, and "this changes everything" energy on every social platform. I have watched people spend more time configuring OpenClaw than doing the work they wanted OpenClaw to help with.
+
+I would encourage people to resist the FOMO and ignore most of the YouTube content. A lot of it is optimized for clicks, not for boring Tuesday-afternoon usage.
+
+OpenClaw gets useful when you stop expecting magic and start expecting a tool that needs tuning.
 
 ## Memory is files, not magic
 
@@ -225,6 +271,12 @@ OpenClaw also runs a memory flush before compaction by default. That silent turn
 
 ## Heartbeat is for awareness, not exact scheduling
 
+Instead of running separate cron jobs for every periodic check, I like a heartbeat that rotates through checks based on how overdue each one is.
+
+The idea is simple. Each check has a cadence, an optional time window, and a record of the last time it ran. On each heartbeat tick, the system runs whichever check is most overdue.
+
+This batches background work, keeps costs flatter, and avoids the "everything fires at once" problem. Heartbeat checks should run on a cheap model. If a check finds something that needs real work, it should spawn the appropriate agent or create a task instead of trying to do everything inline.
+
 Heartbeat runs periodic agent turns. It is useful for inbox checks, calendar awareness, and lightweight monitoring.
 
 Current heartbeat behavior matters:
@@ -246,6 +298,8 @@ For exact timing, use cron.
 ## Cron and tasks are native now
 
 Older versions made it tempting to wire your own task visibility through Todoist or a similar tool. You can still do that if you like the interface, but OpenClaw now has native task records.
+
+I used to bridge task state into Todoist because OpenClaw felt like a black box. That was useful at the time. I no longer recommend that as the default starting point. Start with OpenClaw's task ledger first, then mirror tasks into Todoist, Linear, GitHub Issues, or Notion only if you need a separate human-facing board.
 
 Use the current split:
 
@@ -305,6 +359,14 @@ Third-party skills can carry broad permissions, hidden assumptions, unnecessary 
 
 The example config keeps `clawhub` disabled on purpose. See [`examples/skill-builder-prompt.md`](examples/skill-builder-prompt.md) for the rebuild flow.
 
+### Asking the bot to build or optimize a skill
+
+One thing that helped me was getting more disciplined about how I ask the bot to create or refactor skills. Vague instructions produce bloated, token-hungry skills every time.
+
+The structure I use follows the AgentSkills specification from [https://agentskills.io](https://agentskills.io/). I am not affiliated with it, but following that model made skills easier to maintain and cheaper to run.
+
+The key is giving the bot hard constraints on line count, tool access, file layout, and expected behavior so it does not produce a giant skill file that eats half your context window.
+
 ## Prompt injection is normal input, not a surprise
 
 If your setup reads web pages, GitHub issues, documents, email, or chat messages from other people, assume prompt injection will show up eventually.
@@ -349,9 +411,15 @@ See [`examples/vps-setup.md`](examples/vps-setup.md) for the longer checklist.
 
 ## What this costs me
 
-Costs change, model availability changes, and providers change pricing.
+I do not pay for everything through APIs.
 
-The useful takeaway is not my exact bill. The useful takeaway is that costs flatten out when you:
+I use coding subscriptions and API usage together. Most months, the API portion is still modest because background work runs on cheaper models and the expensive models are not in the default loop.
+
+At the time this guide was refreshed, my normal spend was still roughly in the same range as before: coding subscriptions plus about $5-$10 per month in API usage split across providers such as OpenRouter and OpenAI. Most months I land around $45-$50 total, depending on which subscriptions I keep active and how much agent work I run.
+
+That number is not a promise. It is a sanity check. If you let agents run nonstop, allow unlimited retries, or route everything through premium models, costs will climb. I have seen people burn through a lot of money quickly by leaving things uncapped.
+
+Costs flatten out when you:
 
 - keep background work on cheaper models;
 - cap concurrency;
@@ -361,6 +429,19 @@ The useful takeaway is not my exact bill. The useful takeaway is that costs flat
 - monitor provider dashboards.
 
 Treat every model and provider claim in this repo as a dated personal note unless it is backed by current OpenClaw docs or provider docs.
+
+## Anthropic subscriptions and credits
+
+I previously warned people away from Anthropic subscriptions for OpenClaw because policy and ban risk were unclear. That has changed.
+
+Anthropic's current published guidance says eligible Claude plans can use Agent SDK and `claude -p` workflows through a separate monthly Agent SDK credit starting June 15, 2026. That does not mean your full normal chat quota is available to OpenClaw. The credit amount depends on the plan. Once that credit is used, extra usage can draw from purchased usage credits if you enable that path.
+
+My practical recommendation is still cautious:
+
+- if you use a Claude subscription with OpenClaw, watch the plan credit and usage-credit settings;
+- for long-running unattended Gateway hosts, an API key or a provider like OpenRouter is often easier to reason about;
+- do not assume subscription access means unlimited agent usage;
+- check Anthropic's current docs before building a workflow around a specific quota number.
 
 ## Get stable before 24/7
 
@@ -372,7 +453,11 @@ Letting an agent run unattended before you understand its failure modes is how y
 
 ## Config reference
 
-The sanitized config in this repo is based on a working setup:
+A few people asked to see a sanitized version of my OpenClaw config. I am sharing it as a reference, not something to copy verbatim.
+
+It reflects my usage patterns, my constraints, and my tolerance for cost and latency. Yours will almost certainly be different.
+
+The intent is to show how pieces fit together, not to suggest this is the right configuration.
 
 - [`examples/sanitized-config.json`](examples/sanitized-config.json)
 - [`examples/config-example-guide.md`](examples/config-example-guide.md)
@@ -381,6 +466,30 @@ It is a reference, not a template to copy without thought. The provider list, mo
 
 ## Links and referrals
 
-Some older versions of this guide included provider notes and referral links. Keep those separate from technical guidance.
+A few people asked where I am getting access to some of the models and services mentioned above.
 
-For current provider setup, use the official OpenClaw provider docs and the provider's own pricing/auth docs. If a provider note remains in this repo, read it as personal context, not a recommendation.
+For transparency: I am not affiliated with OpenClaw, and nothing in this article depends on using these links.
+
+Some providers I use offer referral programs. Included here for people who ask. Use them or do not.
+
+### Z.ai (GLM models)
+
+Z.ai provides access to GLM models, which I use as capable, lower-cost options for agents that do not need premium models. My exact model choices change as providers update their catalogs, so check Z.ai's current model list before copying an old ID.
+
+- Direct link: [https://z.ai/subscribe](https://z.ai/subscribe)
+- Referral link (supports this guide): [https://z.ai/subscribe?ic=6PVT1IFEZT](https://z.ai/subscribe?ic=6PVT1IFEZT)
+
+### Synthetic
+
+Synthetic hosts several open-source and partner models under one subscription, including GLM and Kimi families, plus additional models via providers such as Fireworks and Together. Check the current catalog before treating any specific model note as current.
+
+- Direct link: [https://synthetic.new](https://synthetic.new)
+- Referral link (supports this guide): [https://synthetic.new/?referral=p7ZFKQRrWliKZGa](https://synthetic.new/?referral=p7ZFKQRrWliKZGa)
+
+Use whichever links you prefer. Referrals help support this guide but are not required.
+
+## Final thoughts
+
+You do not need expensive hardware or expensive subscriptions to make OpenClaw useful. What you need is to be deliberate about configuration, keep visibility into what is happening, and resist the urge to over-engineer before you understand the basics.
+
+If this saves you some time or frustration, it did its job.

@@ -58,6 +58,24 @@ Example output:
 }
 ```
 
+## Parsing Output
+
+Check whether a provider is configured:
+
+```bash
+check-quotas | jq -r '.openrouter.configured'
+```
+
+Use this in an agent prompt as a soft guardrail:
+
+```text
+Before running an expensive job, run `check-quotas`.
+If a provider is not configured or reports pressure, use the configured fallback model.
+Do not print API keys, raw account IDs, or full provider metadata.
+```
+
+The helper is intentionally conservative. If a provider does not expose a quota endpoint, the script should report that clearly instead of pretending it knows the remaining spend.
+
 ## Limits
 
 - Provider quota APIs differ.
@@ -99,3 +117,21 @@ Do not print API keys or full provider account metadata.
 - Assign cheap models to monitoring and heartbeat jobs.
 - Use explicit model IDs for unattended cron jobs.
 - Review `agents.defaults.models` and `agents.defaults.model.fallbacks` after provider changes.
+
+## Security
+
+The script reads local secrets. Keep it local.
+
+- Do not commit provider keys.
+- Do not paste raw output into public issues if it contains account metadata.
+- Keep `~/.openclaw/credentials` mode `700`.
+- Keep token files mode `600`.
+- Prefer provider dashboards for hard billing limits.
+
+## Limitations
+
+- Provider APIs change.
+- Some providers have no useful quota endpoint.
+- Subscription-style auth may report usage differently from API keys.
+- This helper cannot stop spending by itself.
+- A failed quota check should not automatically push work onto a more expensive fallback.

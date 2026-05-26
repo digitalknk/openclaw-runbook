@@ -4,6 +4,22 @@ These examples show how to define specialist agents without tying the runbook to
 
 The examples assume current OpenClaw behavior: subagents are configured through `agents.list`, inherit the workspace bootstrap that OpenClaw injects, and report back through session tools such as `sessions_yield`.
 
+## Three Ways To Create Agents
+
+1. Ask your current agent to draft a specialist prompt, then review it.
+2. Add a named agent in config under `agents.list`.
+3. Put shared role instructions in workspace files such as `AGENTS.md`.
+
+Do not start by building ten agents. Start with one or two roles you actually need. A monitor, researcher, writer, or coordinator is enough for most people.
+
+## What Each Section Means
+
+- `agents.defaults.models`: the model catalog and allowlist.
+- `agents.defaults.model`: the default primary and fallback chain.
+- `agents.list`: named agents with role-specific model and tool choices.
+- `workspace`: where the agent reads local prompts, memory, and files.
+- `tools`: what the agent can do.
+
 ## Model Routing
 
 Model IDs are provider-qualified strings from your catalog:

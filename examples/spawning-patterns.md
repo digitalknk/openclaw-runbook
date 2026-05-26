@@ -105,6 +105,39 @@ Spawn three researcher subagents:
 After spawning, call sessions_yield. When results return, verify conflicts and synthesize one answer.
 ```
 
+## Pattern: Spawning From A Skill
+
+A local skill can tell the parent when to delegate, but it should not hide broad tool access.
+
+```markdown
+When this skill receives more than three independent items, ask the coordinator to spawn one researcher per item.
+
+Each child task must include:
+- the item text
+- the expected output format
+- source restrictions
+- the destination for findings
+
+Use isolated context unless the current conversation is required.
+```
+
+## Pattern: Spawning From An Agent Prompt
+
+Coordinator agents should have explicit delegation rules:
+
+```text
+Delegate only when:
+- the work is slow;
+- the work can be done independently;
+- a specialist model/tool set reduces risk;
+- the parent cannot keep enough context to do it well.
+
+Do not delegate:
+- simple edits;
+- one-command checks;
+- tasks requiring the current user conversation unless context: "fork" is justified.
+```
+
 ## Pattern: Cron Starts Work
 
 For exact schedules, use cron. Let the cron run decide whether to spawn children.
@@ -126,6 +159,8 @@ openclaw tasks list
 ```
 
 ## Common Mistakes
+
+Most subagent problems come from treating detached work like a blocking function call. The child run has its own context, cost, model choice, and failure modes. Make the task complete, let OpenClaw deliver the result back, and keep the parent responsible for reviewing it.
 
 ### Polling for completion
 
@@ -152,6 +187,14 @@ Subagent results are internal reports. The parent should verify and synthesize t
 ### Spawning tiny tasks
 
 Subagents have context and coordination overhead. Do not spawn for work the current agent can finish directly in a few seconds.
+
+## Cost Considerations
+
+- Subagents can multiply cost quickly.
+- Put a hard limit on `agents.defaults.subagents.maxConcurrent`.
+- Use cheap models for checks and stronger models only for work that needs them.
+- Do not spawn children from public or loosely allowlisted channels.
+- For cron jobs, start with one run and inspect the task record before enabling repeated schedules.
 
 ## Debugging
 
