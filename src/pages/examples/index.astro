@@ -1,0 +1,65 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { routeFor, sortEntries, withBase } from "@/lib/site";
+
+const entries = sortEntries((await getCollection("runbook")).filter((entry) => entry.data.section === "examples"));
+const assets = [
+  {
+    title: "sanitized-config.json",
+    description: "Current sanitized config reference.",
+    href: withBase("/assets/examples/sanitized-config.json"),
+    source: "examples/sanitized-config.json",
+  },
+  {
+    title: "check-quotas.sh",
+    description: "Optional provider quota check helper.",
+    href: withBase("/assets/examples/check-quotas.sh"),
+    source: "examples/check-quotas.sh",
+  },
+  {
+    title: "coeus.py",
+    description: "Supporting script used by the Coeus knowledge-base showcase.",
+    href: withBase("/assets/examples/coeus.py"),
+    source: "examples/coeus.py",
+  },
+];
+---
+
+<BaseLayout title="Examples" description="OpenClaw configuration, security, heartbeat, task, and VPS examples." pathname="/examples/">
+  <section class="page-heading">
+    <div class="container">
+      <h1>Examples</h1>
+      <p class="page-heading__dek">Templates and references for building a setup you can inspect, test, and rollback.</p>
+    </div>
+  </section>
+  <section class="listing">
+    <div class="container">
+      <table class="listing-table">
+        <thead>
+          <tr>
+            <th>Document</th>
+            <th>Use</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => (
+            <tr>
+              <td><a href={routeFor(entry)}>{entry.data.title}</a></td>
+              <td>{entry.data.description}</td>
+              <td><small>{entry.data.sourcePath}</small></td>
+            </tr>
+          ))}
+          {assets.map((asset) => (
+            <tr>
+              <td><a href={asset.href}>{asset.title}</a></td>
+              <td>{asset.description}</td>
+              <td><small>{asset.source}</small></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</BaseLayout>

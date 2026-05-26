@@ -1,0 +1,62 @@
+---
+import { render, type CollectionEntry } from "astro:content";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { routeFor, sourceUrl, sortEntries } from "@/lib/site";
+
+interface Props {
+  entry: CollectionEntry<"runbook">;
+  entries: CollectionEntry<"runbook">[];
+}
+
+const { entry, entries } = Astro.props;
+const { Content, headings } = await render(entry);
+const sameSection = sortEntries(entries.filter((item) => item.data.section === entry.data.section));
+const currentIndex = sameSection.findIndex((item) => item.id === entry.id);
+const previous = currentIndex > 0 ? sameSection[currentIndex - 1] : undefined;
+const next = currentIndex >= 0 ? sameSection[currentIndex + 1] : undefined;
+const sectionHeadings = headings.filter((heading) => heading.depth === 2);
+---
+
+<BaseLayout title={entry.data.title} description={entry.data.description} pathname={entry.data.route}>
+  <div class="content-frame">
+    <article class="content-main">
+      <div class="prose">
+        <Content />
+      </div>
+      <div class="content-meta">
+        Source: <a href={sourceUrl(entry.data.sourcePath)}>{entry.data.sourcePath}</a>
+        {" / "}
+        Section: {entry.data.section}
+      </div>
+      <nav class="next-prev" aria-label="Adjacent pages">
+        <span>
+          {previous && (
+            <a href={routeFor(previous)}>
+              <small>Previous</small>
+              {previous.data.title}
+            </a>
+          )}
+        </span>
+        <span>
+          {next && (
+            <a href={routeFor(next)}>
+              <small>Next</small>
+              {next.data.title}
+            </a>
+          )}
+        </span>
+      </nav>
+    </article>
+    <aside class="content-sidebar" aria-label="Page sections">
+      {sectionHeadings.length > 0 ? (
+        <ol>
+          {sectionHeadings.map((heading) => (
+            <li><a href={`#${heading.slug}`}>{heading.text}</a></li>
+          ))}
+        </ol>
+      ) : (
+        <p>No subsections.</p>
+      )}
+    </aside>
+  </div>
+</BaseLayout>

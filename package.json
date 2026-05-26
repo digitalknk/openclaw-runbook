@@ -1,0 +1,25 @@
+{
+  "name": "openclaw-runbook",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync:content": "node scripts/sync-content.mjs",
+    "predev": "npm run sync:content",
+    "dev": "astro dev",
+    "precheck": "npm run sync:content",
+    "check": "astro check",
+    "prebuild": "npm run sync:content",
+    "build": "astro build",
+    "prepreview": "npm run sync:content",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.2",
+    "astro": "^6.3.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.9.3"
+  }
+}

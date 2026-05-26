@@ -1,0 +1,12 @@
+---
+import { getCollection } from "astro:content";
+import ContentLayout from "@/layouts/ContentLayout.astro";
+
+const entries = await getCollection("runbook");
+const entry = entries.find((item) => item.data.route === "/license/");
+if (!entry) {
+  throw new Error("License content was not generated.");
+}
+---
+
+<ContentLayout entry={entry} entries={entries} />

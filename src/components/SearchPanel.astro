@@ -1,0 +1,75 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { routeFor } from "@/lib/site";
+
+interface Props {
+  entries: CollectionEntry<"runbook">[];
+}
+
+const searchEntries = Astro.props.entries.map((entry) => ({
+  title: entry.data.title,
+  summary: entry.data.description,
+  section: entry.data.section,
+  url: routeFor(entry),
+}));
+---
+
+<section class="manual-search" aria-label="Runbook search">
+  <div class="manual-search__row">
+    <label for="runbook-search">Search the runbook</label>
+    <input
+      id="runbook-search"
+      type="search"
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="gateway, tailscale, heartbeat, prompt injection"
+    />
+    <ol class="search-results" id="search-results" aria-live="polite"></ol>
+  </div>
+  <script is:inline type="application/json" id="search-data" set:html={JSON.stringify(searchEntries)} />
+  <script is:inline>
+    const input = document.querySelector("#runbook-search");
+    const results = document.querySelector("#search-results");
+    const dataElement = document.querySelector("#search-data");
+    const entries = dataElement ? JSON.parse(dataElement.textContent || "[]") : [];
+
+    /**
+     * @param {Array<{ title: string; summary: string; section: string; url: string }>} matches
+     */
+    function render(matches) {
+      if (!results) return;
+      results.innerHTML = "";
+
+      for (const match of matches.slice(0, 6)) {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        const section = document.createElement("small");
+        const summary = document.createElement("small");
+
+        link.href = match.url;
+        link.textContent = match.title;
+        section.textContent = match.section;
+        summary.textContent = match.summary;
+
+        item.append(link, section, summary);
+        results.append(item);
+      }
+    }
+
+    if (input instanceof HTMLInputElement) {
+      input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+      if (query.length < 2) {
+        render([]);
+        return;
+      }
+
+      render(
+        entries.filter((entry) =>
+          `${entry.title} ${entry.summary} ${entry.section}`.toLowerCase().includes(query),
+        ),
+      );
+      });
+    }
+  </script>
+</section>

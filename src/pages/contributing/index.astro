@@ -1,0 +1,12 @@
+---
+import { getCollection } from "astro:content";
+import ContentLayout from "@/layouts/ContentLayout.astro";
+
+const entries = await getCollection("runbook");
+const entry = entries.find((item) => item.data.route === "/contributing/");
+if (!entry) {
+  throw new Error("Contributing content was not generated.");
+}
+---
+
+<ContentLayout entry={entry} entries={entries} />

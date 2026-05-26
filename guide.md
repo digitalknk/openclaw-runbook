@@ -8,7 +8,7 @@ The setup that has held up for me is simple: keep access private, make model rou
 
 My current setup is Tailscale-first. The Gateway stays loopback-bound, and I reach the Control UI through Tailscale, even when I am local. If you do not want Tailscale, keep OpenClaw local and use Telegram or another channel for remote access instead.
 
-This guide was refreshed against the local OpenClaw docs at commit `5dccba7405` from `2026-05-25`. OpenClaw changes fast, so check the official docs and recent issues before assuming your config is broken.
+This guide was refreshed against OpenClaw at commit `5dccba7405` from `2026-05-25`. OpenClaw changes fast, so check the official docs and recent issues before assuming your config is broken.
 
 - [OpenClaw Docs](https://docs.openclaw.ai/)
 - [OpenClaw FAQ](https://docs.openclaw.ai/help/faq)

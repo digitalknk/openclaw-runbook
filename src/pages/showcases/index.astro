@@ -1,0 +1,38 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { routeFor, sortEntries } from "@/lib/site";
+
+const entries = sortEntries((await getCollection("runbook")).filter((entry) => entry.data.section === "showcases"));
+---
+
+<BaseLayout title="Showcases" description="Operational OpenClaw automation patterns that can be adapted after review." pathname="/showcases/">
+  <section class="page-heading">
+    <div class="container">
+      <h1>Showcases</h1>
+      <p class="page-heading__dek">Operational patterns to adapt. Replace placeholders, test manually, and keep remote access inside your chosen boundary.</p>
+    </div>
+  </section>
+  <section class="listing">
+    <div class="container">
+      <table class="listing-table">
+        <thead>
+          <tr>
+            <th>Showcase</th>
+            <th>Use</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => (
+            <tr>
+              <td><a href={routeFor(entry)}>{entry.data.title}</a></td>
+              <td>{entry.data.description}</td>
+              <td><small>{entry.data.sourcePath}</small></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</BaseLayout>

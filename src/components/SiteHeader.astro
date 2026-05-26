@@ -1,0 +1,24 @@
+---
+import { site, withBase } from "@/lib/site";
+
+const current = Astro.url.pathname;
+const nav = [
+  { href: withBase("/guide/"), label: "Guide", active: current.includes("/guide/") },
+  { href: withBase("/examples/"), label: "Examples", active: current.includes("/examples/") },
+  { href: withBase("/showcases/"), label: "Showcases", active: current.includes("/showcases/") },
+  { href: site.repoUrl, label: "GitHub", active: false },
+];
+---
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="site-mark" href={withBase("/")}>
+      <span class="site-mark__name">{site.name}</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      {nav.map((item) => (
+        <a href={item.href} aria-current={item.active ? "page" : undefined}>{item.label}</a>
+      ))}
+    </nav>
+  </div>
+</header>

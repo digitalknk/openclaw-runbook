@@ -1,6 +1,6 @@
 # OpenClaw Runbook
 
-> Checked against local OpenClaw docs at commit `5dccba7405` (`2026-05-25`)
+> Checked against OpenClaw at commit `5dccba7405` (`2026-05-25`)
 > Example config based on a working `2026.5.x` setup
 
 This repo is a practical runbook for running OpenClaw day to day without burning money, exposing your gateway, or trusting random automation you did not inspect.

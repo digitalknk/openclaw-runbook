@@ -1,0 +1,124 @@
+---
+import { getCollection } from "astro:content";
+import SearchPanel from "@/components/SearchPanel.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { site, withBase } from "@/lib/site";
+
+const entries = await getCollection("runbook");
+
+const startPath = [
+  {
+    step: "New to OpenClaw",
+    action: "Read the guide from the top. It explains the operating model before the examples.",
+    href: withBase("/guide/"),
+  },
+  {
+    step: "Setting up remote access",
+    action: "Read the Tailscale and VPS sections before exposing anything.",
+    href: withBase("/guide/#my-access-model-tailscale-first"),
+  },
+  {
+    step: "Worried about cost",
+    action: "Read model routing, quota checks, heartbeat, and cron before leaving jobs unattended.",
+    href: withBase("/examples/check-quotas/"),
+  },
+  {
+    step: "Adding automation",
+    action: "Use the examples first, then adapt showcases only after you understand the permissions.",
+    href: withBase("/showcases/"),
+  },
+  {
+    step: "Installing skills",
+    action: "Read the local skill rebuilding guidance instead of blindly installing third-party code.",
+    href: withBase("/examples/skill-builder-prompt/"),
+  },
+];
+
+const coverage = [
+  ["Access", "Keep the Gateway private and make remote control deliberate."],
+  ["Models and cost", "Route models explicitly, keep fallbacks visible, and avoid expensive loops."],
+  ["Memory", "Understand what is file-backed, what is indexed, and what gets injected."],
+  ["Automation", "Use heartbeat, cron, tasks, and subagents for the right kind of work."],
+  ["Security", "Treat web pages, documents, email, and chat input as untrusted data."],
+  ["Examples", "Adapt references only after replacing placeholders and testing manually."],
+];
+
+const documents = [
+  [
+    "Guide",
+    "The full runbook: setup stance, access, model routing, memory, automation, skills, and security.",
+    withBase("/guide/"),
+  ],
+  [
+    "Examples",
+    "Config references, security prompts, heartbeat patterns, task tracking, quota checks, and VPS setup.",
+    withBase("/examples/"),
+  ],
+  [
+    "Showcases",
+    "Practical automation patterns for daily briefs, idea pipelines, homelab access, and worker orchestration.",
+    withBase("/showcases/"),
+  ],
+];
+---
+
+<BaseLayout pathname="/">
+  <div class="home">
+    <section class="home-intro">
+      <h1>OpenClaw Runbook</h1>
+      <p class="lede">{site.description}</p>
+      <p class="note">Checked against {site.checkedAgainst} on {site.checkedDate}.</p>
+      <p>
+        This is a practical guide for turning OpenClaw from an interesting agent
+        experiment into a setup you can run, inspect, and keep inside clear
+        boundaries.
+      </p>
+    </section>
+
+    <section class="home-section">
+      <h2>Start here</h2>
+      <ol class="start-list">
+        {startPath.map((item) => (
+          <li>
+            <a href={item.href}>{item.step}</a>
+            <span>{item.action}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="home-section">
+      <h2>What this covers</h2>
+      <table class="plain-table">
+        <tbody>
+          {coverage.map(([topic, summary]) => (
+            <tr>
+              <th scope="row">{topic}</th>
+              <td>{summary}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="home-section">
+      <h2>Documents</h2>
+      <table class="plain-table">
+        <tbody>
+          {documents.map(([title, summary, href]) => (
+            <tr>
+              <th scope="row"><a href={href}>{title}</a></th>
+              <td>{summary}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="home-section">
+      <h2>Search</h2>
+      <p>Search runs in the browser and does not require a backend.</p>
+      <SearchPanel entries={entries} />
+    </section>
+  </div>
+</BaseLayout>

@@ -1,0 +1,59 @@
+---
+import SiteHeader from "@/components/SiteHeader.astro";
+import { canonicalUrl, site, withBase } from "@/lib/site";
+import "@/styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  pathname?: string;
+}
+
+const title = Astro.props.title
+  ? `${Astro.props.title} - ${site.name}`
+  : `${site.name} - Unofficial OpenClaw Runbook`;
+const description = Astro.props.description ?? site.description;
+const pathname = Astro.props.pathname ?? Astro.url.pathname.replace(import.meta.env.BASE_URL, "/");
+const canonical = canonicalUrl(pathname);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="keywords" content={site.topics.join(", ")} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="theme-color" content="#f7f7f1" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <SiteHeader />
+      <main class="site-main">
+        <slot />
+      </main>
+      <footer class="site-footer">
+        <div class="site-footer__inner">
+          <span>{site.description}</span>
+          <span>
+            <a href={withBase("/contributing/")}>Contributing</a>
+            {" / "}
+            <a href={withBase("/license/")}>MIT</a>
+            {" / "}
+            <a href={site.repoUrl}>Source</a>
+          </span>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

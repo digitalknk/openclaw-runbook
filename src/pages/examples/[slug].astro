@@ -1,0 +1,18 @@
+---
+import { getCollection } from "astro:content";
+import ContentLayout from "@/layouts/ContentLayout.astro";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("runbook");
+  return entries
+    .filter((entry) => entry.data.section === "examples")
+    .map((entry) => ({
+      params: { slug: entry.data.route.replace(/^\/examples\//, "").replace(/\/$/, "") },
+      props: { entry, entries },
+    }));
+}
+
+const { entry, entries } = Astro.props;
+---
+
+<ContentLayout entry={entry} entries={entries} />
