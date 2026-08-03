@@ -78,14 +78,6 @@
       "models": {
         "zai/glm-5.1": { "alias": "GLM" },
         "zai/glm-5-turbo": {},
-        "minimax/MiniMax-M3": {},
-        "minimax/MiniMax-M2.7": {},
-        "minimax-cn/MiniMax-M3": {},
-        "minimax-cn/MiniMax-M2.7": {},
-        "minimax-openai/MiniMax-M3": {},
-        "minimax-openai/MiniMax-M2.7": {},
-        "minimax-cn-openai/MiniMax-M3": {},
-        "minimax-cn-openai/MiniMax-M2.7": {},
         "openrouter/owl-alpha": {},
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free": {},
         "openrouter/moonshotai/kimi-k2.6": {},
@@ -299,94 +291,6 @@
             "maxTokens": 16384
           }
         ]
-      },
-      "minimax": {
-        "baseUrl": "https://api.minimax.io/anthropic",
-        "api": "anthropic-messages",
-        "models": [
-          {
-            "id": "MiniMax-M3",
-            "name": "MiniMax M3",
-            "reasoning": true,
-            "input": ["text", "image", "video"],
-            "cost": { "input": 0.3, "output": 1.2, "cacheRead": 0.06 },
-            "contextWindow": 1000000
-          },
-          {
-            "id": "MiniMax-M2.7",
-            "name": "MiniMax M2.7",
-            "reasoning": true,
-            "input": ["text"],
-            "cost": { "input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375 },
-            "contextWindow": 204800
-          }
-        ]
-      },
-      "minimax-cn": {
-        "baseUrl": "https://api.minimaxi.com/anthropic",
-        "api": "anthropic-messages",
-        "models": [
-          {
-            "id": "MiniMax-M3",
-            "name": "MiniMax M3",
-            "reasoning": true,
-            "input": ["text", "image", "video"],
-            "cost": { "input": 0.3, "output": 1.2, "cacheRead": 0.06 },
-            "contextWindow": 1000000
-          },
-          {
-            "id": "MiniMax-M2.7",
-            "name": "MiniMax M2.7",
-            "reasoning": true,
-            "input": ["text"],
-            "cost": { "input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375 },
-            "contextWindow": 204800
-          }
-        ]
-      },
-      "minimax-openai": {
-        "baseUrl": "https://api.minimax.io/v1",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "MiniMax-M3",
-            "name": "MiniMax M3",
-            "reasoning": true,
-            "input": ["text", "image", "video"],
-            "cost": { "input": 0.3, "output": 1.2, "cacheRead": 0.06 },
-            "contextWindow": 1000000
-          },
-          {
-            "id": "MiniMax-M2.7",
-            "name": "MiniMax M2.7",
-            "reasoning": true,
-            "input": ["text"],
-            "cost": { "input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375 },
-            "contextWindow": 204800
-          }
-        ]
-      },
-      "minimax-cn-openai": {
-        "baseUrl": "https://api.minimaxi.com/v1",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "MiniMax-M3",
-            "name": "MiniMax M3",
-            "reasoning": true,
-            "input": ["text", "image", "video"],
-            "cost": { "input": 0.3, "output": 1.2, "cacheRead": 0.06 },
-            "contextWindow": 1000000
-          },
-          {
-            "id": "MiniMax-M2.7",
-            "name": "MiniMax M2.7",
-            "reasoning": true,
-            "input": ["text"],
-            "cost": { "input": 0.3, "output": 1.2, "cacheRead": 0.06, "cacheWrite": 0.375 },
-            "contextWindow": 204800
-          }
-        ]
       }
     }
   },
@@ -398,22 +302,6 @@
       },
       "openrouter:default": {
         "provider": "openrouter",
-        "mode": "api_key"
-      },
-      "minimax:default": {
-        "provider": "minimax",
-        "mode": "api_key"
-      },
-      "minimax-cn:default": {
-        "provider": "minimax-cn",
-        "mode": "api_key"
-      },
-      "minimax-openai:default": {
-        "provider": "minimax-openai",
-        "mode": "api_key"
-      },
-      "minimax-cn-openai:default": {
-        "provider": "minimax-cn-openai",
         "mode": "api_key"
       }
     }

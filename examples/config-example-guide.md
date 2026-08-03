@@ -83,45 +83,9 @@ The example defines a custom `zai` provider under `models.providers`.
 
 That block is replaceable. If you use OpenAI, Anthropic, Google, Ollama, OpenRouter, or another provider, use that provider's current OpenClaw docs and update the model refs accordingly.
 
-### MiniMax Provider Variants
+### MiniMax Provider
 
-The sanitized config includes the first two MiniMax models in the model catalog and defines four provider entries so the region and protocol stay explicit:
-
-| Provider | Protocol | Base URL | Model IDs |
-| --- | --- | --- | --- |
-| `minimax` | Anthropic-compatible | `https://api.minimax.io/anthropic` | `MiniMax-M3`, `MiniMax-M2.7` |
-| `minimax-cn` | Anthropic-compatible | `https://api.minimaxi.com/anthropic` | `MiniMax-M3`, `MiniMax-M2.7` |
-| `minimax-openai` | OpenAI-compatible | `https://api.minimax.io/v1` | `MiniMax-M3`, `MiniMax-M2.7` |
-| `minimax-cn-openai` | OpenAI-compatible | `https://api.minimaxi.com/v1` | `MiniMax-M3`, `MiniMax-M2.7` |
-
-Use one provider entry that matches both the user's region and the client protocol. Keep Anthropic-compatible `baseUrl` values at the `/anthropic` suffix; the Anthropic adapter appends its request path. OpenAI-compatible values use the `/v1` API root. Do not mix a global base URL with a domestic provider entry or expose a derived URL as a separate configuration field.
-
-The model metadata in `sanitized-config.json` records a 1,000,000-token context window and text, image, and video inputs for `MiniMax-M3`, plus a 204,800-token context window and text input for `MiniMax-M2.7`. Both entries enable reasoning metadata. `MiniMax-M3` supports adaptive or disabled thinking, while `MiniMax-M2.7` is always-on. The registry exposes the existing boolean reasoning field; choose the thinking mode through the client or runtime setting that supports it instead of adding an unsupported model field.
-
-The configured pricing reference is:
-
-| Model | Service tier | Input / output / cache read / cache write (USD per 1M tokens) |
-| --- | --- | --- |
-| `MiniMax-M3` | Standard, up to 512K input | `0.30 / 1.20 / 0.06 / n/a` |
-| `MiniMax-M3` | Standard, over 512K input | `0.60 / 2.40 / 0.12 / n/a` |
-| `MiniMax-M3` | Priority, up to 512K input | `0.45 / 1.80 / 0.09 / n/a` |
-| `MiniMax-M3` | Priority, over 512K input | `0.90 / 3.60 / 0.18 / n/a` |
-| `MiniMax-M2.7` | Standard | `0.30 / 1.20 / 0.06 / 0.375` |
-
-The registry stores the standard rate for inputs up to 512,000 tokens; verify the active service tier before relying on cost estimates for larger requests.
-
-The provider-specific auth profiles keep API keys out of the published config:
-
-```json
-"auth": {
-  "profiles": {
-    "minimax:default": { "provider": "minimax", "mode": "api_key" },
-    "minimax-cn:default": { "provider": "minimax-cn", "mode": "api_key" },
-    "minimax-openai:default": { "provider": "minimax-openai", "mode": "api_key" },
-    "minimax-cn-openai:default": { "provider": "minimax-cn-openai", "mode": "api_key" }
-  }
-}
-```
+MiniMax is built into OpenClaw as of v2026.6.1, covering both the global (`api.minimax.io`) and China (`api.minimaxi.com`) setup paths. Use OpenClaw's built-in MiniMax provider setup instead of a manual provider entry in the runbook; manual entries duplicate the upstream catalog and can drift from it. Update the model refs from the current built-in MiniMax catalog when you configure it.
 
 ## Auth Profiles and Secrets
 
